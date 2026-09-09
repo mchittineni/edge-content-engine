@@ -1,0 +1,43 @@
+name: Feature Request
+description: Propose a new feature, agent capability, or platform integration
+title: "feat: "
+labels: ["enhancement", "proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea to improve the EDGE Content Engine? Tell us about it below.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What challenge or gap does this feature address?
+      placeholder: A clear description of the current limitation...
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution
+      description: Detailed description of what you envision.
+      placeholder: Explain the workflow, schemas, or agents to be added/updated...
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions Considered
+      description: Any alternative approaches or workarounds you considered.
+  - type: dropdown
+    id: target_area
+    attributes:
+      label: Area of Enhancement
+      options:
+        - "Autonomous Agents & Prompt Engineering"
+        - "Distribution Integrations (Substack, Dev.to, Medium, LinkedIn)"
+        - "Evaluation, Benchmarks & AST Validation"
+        - "Storage Lake & Vector Indexing"
+        - "Observability, Cost Control & Tracing"
+        - "Developer Experience / CLI"
+    validations:
+      required: true

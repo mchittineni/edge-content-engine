@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability Disclosure
+    url: https://github.com/mchittineni/edge-content-engine/security/policy
+    about: Please report security vulnerabilities privately.
+  - name: EDGE Architecture Discussions
+    url: https://github.com/mchittineni/edge-content-engine/discussions
+    about: Ask architectural questions and discuss article ideas with the community.

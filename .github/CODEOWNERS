@@ -1,0 +1,16 @@
+# Global default code owners
+* @mchittineni
+
+# Core packages & Schemas
+/packages/ @mchittineni
+/packages/schemas/ @mchittineni
+
+# Autonomous Agents
+/agents/ @mchittineni
+/prompts/ @mchittineni
+
+# Infrastructure & Deployment
+/infrastructure/ @mchittineni
+/.github/workflows/ @mchittineni
+/Dockerfile @mchittineni
+/docker-compose.yml @mchittineni

@@ -1,0 +1,59 @@
+name: Bug Report
+description: File an actionable bug report with reproducible steps
+title: "fix: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug. Please fill in the details below to help us reproduce and fix it.
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe what happened...
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      options:
+        - "agents (Writer, Researcher, Scorer, Validator, etc.)"
+        - "packages (llm, storage, github, beehiiv, observability)"
+        - "apps (API, Workers, Dispatcher, Reviewer UI)"
+        - "cli (Edge CLI)"
+        - "infrastructure (Terraform, S3, SQS)"
+        - "CI/CD & Workflows"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Provide clear, reproducible steps.
+      placeholder: |
+        1. Run 'edge run-pipeline --topic "..."'
+        2. Inspect output in content/drafts/...
+        3. See error traceback...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment & Versions
+      description: Python version, OS, relevant dependency versions.
+      value: |
+        - OS: [e.g. macOS 14.5 / Ubuntu 22.04]
+        - Python version: [e.g. 3.11.8]
+        - LLM Provider: [e.g. Gemini 1.5 Pro / Claude 3.5 Sonnet / OpenAI]
+    validations:
+      required: true
