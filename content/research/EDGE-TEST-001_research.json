@@ -1,0 +1,48 @@
+{
+  "article_id": "EDGE-2026-001",
+  "topic": "Terraform plans are terrible architecture diagrams",
+  "thesis": "Declarative execution plans represent state mutation diffs, not topological system architecture, leading to critical cognitive blindspots in large-scale infrastructure.",
+  "claims": [
+    {
+      "claim": "Terraform execution plans omit topological dependency relations between existing unmutated resources.",
+      "importance": "high",
+      "tier": "Tier 1: Official docs, GitHub repos, RFCs, specs, academic papers",
+      "source_name": "HashiCorp Terraform Documentation: Plan Resource State",
+      "source_url": "https://developer.hashicorp.com/terraform/cli/commands/plan",
+      "quote_or_context": "The plan command shows planned changes to individual resources, not the holistic dependency tree.",
+      "confidence": 0.98
+    },
+    {
+      "claim": "Direct graph extraction from Terraform AST and state reveals blast radius invisible in CLI diffs.",
+      "importance": "high",
+      "tier": "Tier 1: Official docs, GitHub repos, RFCs, specs, academic papers",
+      "source_name": "tf-arch-diagram-generator / blast-radius research",
+      "source_url": "https://github.com/mchittineni/tf-arch-diagram-generator",
+      "quote_or_context": "Parsing node edges from terraform graph outputs provides deterministic spatial topology.",
+      "confidence": 0.99
+    }
+  ],
+  "competitors_or_alternatives": [
+    "Rover",
+    "Inframap",
+    "Brainboard"
+  ],
+  "github_evidence": [
+    {
+      "repo": "mchittineni/tf-arch-diagram-generator",
+      "commit": "main",
+      "feature": "JSON to Mermaid AST"
+    }
+  ],
+  "counterarguments": [
+    "Native terraform graph output produces DOT files, but they are unreadable spaghetti graphs at scale."
+  ],
+  "sources": [
+    {
+      "title": "Terraform Graph CLI Specification",
+      "url": "https://developer.hashicorp.com/terraform/cli/commands/graph",
+      "tier": "Tier 1: Official docs, GitHub repos, RFCs, specs, academic papers",
+      "notes": null
+    }
+  ]
+}

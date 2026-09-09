@@ -1,0 +1,13 @@
+graph TD
+    subgraph Edge
+        CF[CloudFront] --> WAF[AWS WAF]
+    end
+    subgraph Application
+        WAF --> APIGW[API Gateway]
+        APIGW --> ECS[ECS Fargate Tasks]
+    end
+    subgraph Data
+        ECS --> RDS[(Aurora PostgreSQL)]
+        ECS --> Redis[(ElastiCache Redis)]
+        ECS --> S3[(S3 Assets Bucket)]
+    end
