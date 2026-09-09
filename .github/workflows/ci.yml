@@ -1,0 +1,146 @@
+name: CI & Enterprise Quality Gate
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-format:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Lint Tools
+        run: pip install ruff
+
+      - name: Ruff Linter
+        run: ruff check .
+
+      - name: Ruff Formatter Check
+        run: ruff format --check .
+
+  type-check:
+    name: Strict Type Checking (Mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Project & Dev Dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run Mypy
+        run: mypy packages agents apps cli
+
+  security-audit:
+    name: SAST & Supply Chain Security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Security Scanners
+        run: pip install bandit pip-audit
+
+      - name: Run Bandit (SAST)
+        run: bandit -c pyproject.toml -r packages agents apps cli
+
+      - name: Run Pip-Audit (Vulnerabilities)
+        run: pip-audit --desc on
+
+  test-suite:
+    name: Test Matrix (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install Project & Dev Dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run Pytest with Coverage
+        run: |
+          pytest --cov=packages --cov=agents --cov=apps --cov=cli \
+                 --cov-report=xml \
+                 --cov-report=term-missing \
+                 tests/
+
+      - name: Upload Coverage Artifacts
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 14
+
+  terraform-checks:
+    name: Terraform Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive infrastructure/terraform/
+
+  docker-build:
+    name: Container Build Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: edge-content-engine:test

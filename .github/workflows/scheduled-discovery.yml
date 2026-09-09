@@ -1,0 +1,29 @@
+name: Scheduled Daily Discovery
+
+on:
+  schedule:
+    # Runs daily at 08:00 UTC
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: pip install -e .
+
+      - name: Run Discovery Scanner
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -m cli.main discover

@@ -1,0 +1,32 @@
+name: Git Push Idea Analyzer
+
+on:
+  push:
+    paths:
+      - '**.tf'
+      - '**.rego'
+      - 'benchmarks/**'
+      - 'tests/**'
+
+jobs:
+  analyze-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: pip install -e .
+
+      - name: Evaluate Commit Diff
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python -m cli.main diff-inspect 10 --benchmark
