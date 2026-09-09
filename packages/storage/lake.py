@@ -4,6 +4,7 @@ Content Lake storage abstraction supporting both local filesystem and AWS S3.
 
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -26,33 +27,53 @@ class ContentLake:
         for subdir in ["raw", "research", "drafts", "diagrams", "published", "analytics", "state"]:
             (self.base_dir / subdir).mkdir(parents=True, exist_ok=True)
 
+    def _resolve_safe_path(self, subdir: str, filename: str) -> Path:
+        """
+        Validates and safely resolves path to prevent directory traversal (CWE-22 / CWE-73).
+        """
+        # Whitelist safe characters: alphanumeric, hyphen, underscore, dot
+        if not re.match(r"^[a-zA-Z0-9_\-\.]+$", filename):
+            raise ValueError(f"Invalid characters in filename: {filename}")
+
+        target_dir = (self.base_dir / subdir).resolve()
+        resolved_path = (target_dir / filename).resolve()
+
+        if not resolved_path.is_relative_to(target_dir):
+            raise ValueError(f"Path traversal detected: {filename}")
+
+        return resolved_path
+
     def save_raw(self, source_id: str, content: str, ext: str = "json") -> str:
-        path = self.base_dir / "raw" / f"{source_id}.{ext}"
+        path = self._resolve_safe_path("raw", f"{source_id}.{ext}")
         path.write_text(content, encoding="utf-8")
         return str(path)
 
     def save_research(self, article_id: str, research_data: Dict[str, Any]) -> str:
-        path = self.base_dir / "research" / f"{article_id}_research.json"
+        path = self._resolve_safe_path("research", f"{article_id}_research.json")
         path.write_text(json.dumps(research_data, indent=2, default=str), encoding="utf-8")
         return str(path)
 
     def save_draft(self, article_id: str, version: int, markdown_text: str) -> str:
-        path = self.base_dir / "drafts" / f"{article_id}_v{version}.md"
+        path = self._resolve_safe_path("drafts", f"{article_id}_v{version}.md")
         path.write_text(markdown_text, encoding="utf-8")
         return str(path)
 
     def save_diagram(self, article_id: str, filename: str, content: str) -> str:
-        path = self.base_dir / "diagrams" / f"{article_id}_{filename}"
+        path = self._resolve_safe_path("diagrams", f"{article_id}_{filename}")
         path.write_text(content, encoding="utf-8")
         return str(path)
 
     def save_article_state(self, article: ArticleRecord) -> str:
-        path = self.base_dir / "state" / f"{article.id}.json"
+        path = self._resolve_safe_path("state", f"{article.id}.json")
         path.write_text(json.dumps(article.model_dump(), indent=2, default=str), encoding="utf-8")
         return str(path)
 
     def load_article_state(self, article_id: str) -> Optional[ArticleRecord]:
-        path = self.base_dir / "state" / f"{article_id}.json"
+        try:
+            path = self._resolve_safe_path("state", f"{article_id}.json")
+        except ValueError:
+            return None
+
         if not path.exists():
             return None
         data = json.loads(path.read_text(encoding="utf-8"))
