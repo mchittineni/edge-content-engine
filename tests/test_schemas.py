@@ -1,5 +1,11 @@
-import pytest
-from packages.schemas import OpportunityScore, JobContract, AgentType, JobStatus, ArticleRecord, ArticleStatus
+from packages.schemas import (
+    AgentType,
+    ArticleRecord,
+    ArticleStatus,
+    JobContract,
+    JobStatus,
+    OpportunityScore,
+)
 
 
 def test_opportunity_scoring_thresholds():

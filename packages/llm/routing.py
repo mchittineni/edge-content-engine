@@ -7,13 +7,13 @@ from typing import Dict
 
 
 class TaskTier(str, Enum):
-    CLASSIFICATION = "classification"      # Cheap, fast
-    SUMMARIZATION = "summarization"        # Cheap, fast
-    RESEARCH = "research"                  # Strong, high-context
-    TECHNICAL_WRITING = "technical_writing"# Strongest synthesis & tone
-    CODE_REVIEW = "code_review"            # Deep reasoning & validation
-    SEO = "seo"                            # Cheap, fast
-    SOCIAL = "social"                      # Creative, fast
+    CLASSIFICATION = "classification"  # Cheap, fast
+    SUMMARIZATION = "summarization"  # Cheap, fast
+    RESEARCH = "research"  # Strong, high-context
+    TECHNICAL_WRITING = "technical_writing"  # Strongest synthesis & tone
+    CODE_REVIEW = "code_review"  # Deep reasoning & validation
+    SEO = "seo"  # Cheap, fast
+    SOCIAL = "social"  # Creative, fast
 
 
 # Task to model capability mapping

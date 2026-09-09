@@ -5,7 +5,8 @@ Content Lake storage abstraction supporting both local filesystem and AWS S3.
 import json
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
+
 from packages.schemas import ArticleRecord
 
 
@@ -16,10 +17,11 @@ class ContentLake:
     """
 
     def __init__(self, base_dir: Optional[str] = None, s3_bucket: Optional[str] = None):
-        self.base_dir = Path(base_dir or os.getenv("CONTENT_DIR", "./content"))
+        dir_str = base_dir or os.getenv("CONTENT_DIR") or "./content"
+        self.base_dir = Path(dir_str)
         self.s3_bucket = s3_bucket or os.getenv("S3_CONTENT_BUCKET")
         self.is_s3 = bool(os.getenv("EDGE_ENV") == "prod" and self.s3_bucket)
-        
+
         # Ensure local directories exist
         for subdir in ["raw", "research", "drafts", "diagrams", "published", "analytics", "state"]:
             (self.base_dir / subdir).mkdir(parents=True, exist_ok=True)

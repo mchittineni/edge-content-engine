@@ -2,9 +2,10 @@
 Analytics & Recommendation Agent: Aggregates performance into Weekly Intelligence.
 """
 
-from typing import Dict, Any, List
-from packages.schemas import AgentType
+from typing import Any, Dict
+
 from agents.base import BaseAgent
+from packages.schemas import AgentType
 
 
 class AnalyticsAgent(BaseAgent):

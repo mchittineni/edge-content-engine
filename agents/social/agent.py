@@ -3,10 +3,11 @@ Social Distribution Agent: Platform-tailored content packager for LinkedIn, Redd
 Enforces authentic community discourse rules (strictly no spam or promotional tone).
 """
 
-from typing import Dict, Any
-from packages.schemas import AgentType, SocialPackage
-from packages.llm import TaskTier
+from typing import Any, Dict
+
 from agents.base import BaseAgent
+from packages.llm import TaskTier
+from packages.schemas import AgentType, SocialPackage
 
 
 class SocialAgent(BaseAgent):

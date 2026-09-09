@@ -2,11 +2,12 @@
 Standard JobContract for decoupled, asynchronous agent communication.
 """
 
+import uuid
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, Optional
+
 from pydantic import BaseModel, Field
-from datetime import datetime, timezone
-import uuid
 
 
 class AgentType(str, Enum):
@@ -49,6 +50,7 @@ class JobContract(BaseModel):
     Decoupled contract passed through SQS / event bus.
     Every agent consumes and produces this standard structure.
     """
+
     job_id: str = Field(default_factory=lambda: f"job_{uuid.uuid4().hex[:12]}")
     article_id: str
     agent: AgentType

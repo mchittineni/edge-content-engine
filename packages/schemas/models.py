@@ -2,11 +2,11 @@
 Core Pydantic data models for the EDGE editorial pipeline.
 """
 
-from enum import Enum
-from typing import List, Dict, Optional, Any
-from pydantic import BaseModel, Field
 from datetime import datetime, timezone
-import uuid
+from enum import Enum
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class ArticleStatus(str, Enum):
@@ -36,12 +36,20 @@ class SourceTier(str, Enum):
 
 
 class OpportunityScore(BaseModel):
-    github_relevance: int = Field(ge=1, le=10, description="Alignment with your repositories & expertise")
+    github_relevance: int = Field(
+        ge=1, le=10, description="Alignment with your repositories & expertise"
+    )
     originality: int = Field(ge=1, le=10, description="Uniqueness compared to existing content")
-    technical_depth: int = Field(ge=1, le=10, description="Opportunity for hands-on, architectural analysis")
-    search_demand: int = Field(ge=1, le=10, description="Organic search volume & developer curiosity")
+    technical_depth: int = Field(
+        ge=1, le=10, description="Opportunity for hands-on, architectural analysis"
+    )
+    search_demand: int = Field(
+        ge=1, le=10, description="Organic search volume & developer curiosity"
+    )
     current_interest: int = Field(ge=1, le=10, description="Trending in HN, Reddit, tech feeds")
-    personal_authority: int = Field(ge=1, le=10, description="Your background in IaC/DevOps/Security")
+    personal_authority: int = Field(
+        ge=1, le=10, description="Your background in IaC/DevOps/Security"
+    )
 
     @property
     def total_score(self) -> int:
@@ -149,7 +157,9 @@ class QAReport(BaseModel):
         return (
             self.technical_score >= 90
             and len(self.blocking_issues) == 0
-            and all(check.passed for check in self.code_checks if check.tool in ["terraform", "ruff"])
+            and all(
+                check.passed for check in self.code_checks if check.tool in ["terraform", "ruff"]
+            )
         )
 
 

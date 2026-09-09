@@ -2,10 +2,11 @@
 Scorer Bot: Evaluates candidate ideas out of 60 points with threshold logic.
 """
 
-from typing import Dict, Any
-from packages.schemas import AgentType, OpportunityScore
-from packages.llm import TaskTier
+from typing import Any, Dict
+
 from agents.base import BaseAgent
+from packages.llm import TaskTier
+from packages.schemas import AgentType, OpportunityScore
 
 
 class ScorerAgent(BaseAgent):

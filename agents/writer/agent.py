@@ -2,10 +2,11 @@
 Writer Bot: Senior Technical Editor for EDGE enforcing the 14-section format.
 """
 
-from typing import Dict, Any
-from packages.schemas import AgentType, ArticleDraft
-from packages.llm import TaskTier
+from typing import Any, Dict
+
 from agents.base import BaseAgent
+from packages.llm import TaskTier
+from packages.schemas import AgentType, ArticleDraft
 
 
 class WriterAgent(BaseAgent):

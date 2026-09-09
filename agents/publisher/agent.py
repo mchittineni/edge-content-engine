@@ -3,16 +3,17 @@ Publisher Bot: Asynchronous publishing downstream to Beehiiv.
 Canonical copy remains in PostgreSQL and S3 Lake.
 """
 
-from typing import Dict, Any
-from packages.schemas import AgentType, ArticleDraft, PublicationRecord
-from packages.beehiiv import BeehiivClient
+from typing import Any, Dict, Optional
+
 from agents.base import BaseAgent
+from packages.beehiiv import BeehiivClient
+from packages.schemas import AgentType, ArticleDraft, PublicationRecord
 
 
 class PublisherAgent(BaseAgent):
     agent_type = AgentType.PUBLISHER
 
-    def __init__(self, beehiiv_client: BeehiivClient = None):
+    def __init__(self, beehiiv_client: Optional[BeehiivClient] = None):
         super().__init__()
         self.beehiiv = beehiiv_client or BeehiivClient()
 

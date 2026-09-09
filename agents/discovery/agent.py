@@ -2,16 +2,16 @@
 Discovery Bot: Watches GitHub repositories, releases, benchmarks, and cloud ecosystems.
 """
 
-from typing import Dict, Any, List
-from packages.schemas import AgentType
+from typing import Any, Dict, List
+
 from agents.base import BaseAgent
+from packages.schemas import AgentType
 
 
 class DiscoveryAgent(BaseAgent):
     agent_type = AgentType.DISCOVERY
 
     async def process(self, article_id: str, input_payload: Dict[str, Any]) -> Dict[str, Any]:
-        source_type = input_payload.get("source_type", "github")
         repo_name = input_payload.get("repo_name", "mchittineni/tf-arch-diagram-generator")
 
         # Discover potential story ideas
