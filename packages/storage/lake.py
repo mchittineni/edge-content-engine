@@ -69,15 +69,21 @@ class ContentLake:
         return str(path)
 
     def load_article_state(self, article_id: str) -> Optional[ArticleRecord]:
-        try:
-            clean_id = os.path.basename(article_id)
-            path = self._resolve_safe_path("state", f"{clean_id}.json")
-        except ValueError:
+        clean_id = os.path.basename(article_id)
+        if clean_id != article_id or not re.match(r"^[a-zA-Z0-9_\-]+$", clean_id):
             return None
 
-        if not path.exists():
+        state_dir = os.path.abspath(os.path.join(str(self.base_dir), "state"))
+        target_path = os.path.abspath(os.path.join(state_dir, f"{clean_id}.json"))
+
+        if os.path.commonpath([state_dir, target_path]) != state_dir:
             return None
-        data = json.loads(path.read_text(encoding="utf-8"))
+
+        if not os.path.isfile(target_path):
+            return None
+
+        with open(target_path, encoding="utf-8") as f:
+            data = json.load(f)
         return ArticleRecord.model_validate(data)
 
     def list_articles(self) -> List[ArticleRecord]:
