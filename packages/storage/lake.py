@@ -31,17 +31,17 @@ class ContentLake:
         """
         Validates and safely resolves path to prevent directory traversal (CWE-22 / CWE-73).
         """
-        # Whitelist safe characters: alphanumeric, hyphen, underscore, dot
-        if not re.match(r"^[a-zA-Z0-9_\-\.]+$", filename):
-            raise ValueError(f"Invalid characters in filename: {filename}")
+        clean_filename = os.path.basename(filename)
+        if clean_filename != filename or not re.match(r"^[a-zA-Z0-9_\-\.]+$", clean_filename):
+            raise ValueError(f"Invalid or unsafe filename: {filename}")
 
-        target_dir = (self.base_dir / subdir).resolve()
-        resolved_path = (target_dir / filename).resolve()
+        target_dir = os.path.abspath(os.path.join(str(self.base_dir), subdir))
+        target_path = os.path.abspath(os.path.join(target_dir, clean_filename))
 
-        if not resolved_path.is_relative_to(target_dir):
+        if not target_path.startswith(target_dir + os.sep) and target_path != target_dir:
             raise ValueError(f"Path traversal detected: {filename}")
 
-        return resolved_path
+        return Path(target_path)
 
     def save_raw(self, source_id: str, content: str, ext: str = "json") -> str:
         path = self._resolve_safe_path("raw", f"{source_id}.{ext}")
@@ -70,7 +70,8 @@ class ContentLake:
 
     def load_article_state(self, article_id: str) -> Optional[ArticleRecord]:
         try:
-            path = self._resolve_safe_path("state", f"{article_id}.json")
+            clean_id = os.path.basename(article_id)
+            path = self._resolve_safe_path("state", f"{clean_id}.json")
         except ValueError:
             return None
 
