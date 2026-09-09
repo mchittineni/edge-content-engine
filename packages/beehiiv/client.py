@@ -5,8 +5,10 @@ Handles post creation, asynchronous status polling, and HTML payload conversion.
 
 import asyncio
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
+
 import httpx
+
 from packages.schemas import ArticleDraft, PublicationRecord
 
 
@@ -50,7 +52,7 @@ class BeehiivClient:
             )
 
         endpoint = f"{self.base_url}/publications/{self.publication_id}/posts"
-        
+
         # Render markdown content into HTML or Beehiiv post blocks
         payload = {
             "title": draft.title,
@@ -63,11 +65,9 @@ class BeehiivClient:
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(endpoint, headers=self._headers(), json=payload)
-            
+
             if response.status_code not in (200, 201, 202):
-                raise RuntimeError(
-                    f"Beehiiv API Error ({response.status_code}): {response.text}"
-                )
+                raise RuntimeError(f"Beehiiv API Error ({response.status_code}): {response.text}")
 
             data = response.json().get("data", {})
             post_id = data.get("id")

@@ -4,16 +4,18 @@ human review, and publishing.
 """
 
 import asyncio
+
 import click
 from rich.console import Console
 from rich.table import Table
-from packages.schemas import ArticleRecord, ArticleStatus, AgentType, JobContract
-from packages.storage import default_lake
-from packages.github import GitHubEventNormalizer
-from packages.beehiiv import BeehiivClient
-from apps.workers.pipeline import ArticlePipelineOrchestrator
+
 from apps.workers.dispatcher import AgentDispatcher
+from apps.workers.pipeline import ArticlePipelineOrchestrator
 from cli.approval import HumanApprovalGate
+from packages.beehiiv import BeehiivClient
+from packages.github import GitHubEventNormalizer
+from packages.schemas import AgentType, ArticleStatus, JobContract
+from packages.storage import default_lake
 
 console = Console()
 
@@ -48,13 +50,17 @@ def discover(repo: str):
         table.add_row(str(idx), opp["topic"], opp["category"], opp["source"])
 
     console.print(table)
-    console.print(f"[dim]Run `edge pipeline run <id> --topic \"...\"` to trigger editorial synthesis.[/dim]")
+    console.print(
+        '[dim]Run `edge pipeline run <id> --topic "..."` to trigger editorial synthesis.[/dim]'
+    )
 
 
 @cli.command("pipeline")
 @click.argument("action", type=click.Choice(["run"]))
 @click.argument("article_id", default="EDGE-2026-001")
-@click.option("--topic", default="Terraform plans are terrible architecture diagrams", help="Article topic")
+@click.option(
+    "--topic", default="Terraform plans are terrible architecture diagrams", help="Article topic"
+)
 @click.option("--category", default="architecture", help="Article category")
 def run_pipeline_cmd(action: str, article_id: str, topic: str, category: str):
     """Execute the full editorial pipeline up to the approval gate."""
@@ -68,7 +74,9 @@ def review(article_id: str):
     """Open the interactive terminal review & approval gate."""
     article = default_lake.load_article_state(article_id)
     if not article:
-        console.print(f"[bold red]Article {article_id} not found.[/bold red] Run `edge pipeline run {article_id}` first.")
+        console.print(
+            f"[bold red]Article {article_id} not found.[/bold red] Run `edge pipeline run {article_id}` first."
+        )
         return
     HumanApprovalGate.render_and_prompt(article)
 
@@ -82,7 +90,12 @@ def publish(article_id: str):
         console.print(f"[bold red]Article {article_id} not found.[/bold red]")
         return
     if article.status != ArticleStatus.APPROVED:
-        console.print(f"[bold yellow]Cannot publish article with status: {article.status.value}.[/bold yellow] Must be APPROVED first.")
+        console.print(
+            f"[bold yellow]Cannot publish article with status: {article.status.value}.[/bold yellow] Must be APPROVED first."
+        )
+        return
+    if not article.draft:
+        console.print(f"[bold red]Article {article_id} has no draft.[/bold red]")
         return
 
     console.print(f"[bold cyan]Publishing {article.id} downstream to Beehiiv API...[/bold cyan]")
@@ -92,15 +105,19 @@ def publish(article_id: str):
     article.status = ArticleStatus.PUBLISHED
     default_lake.save_article_state(article)
 
-    console.print(f"[bold green]✓ Successfully published to Beehiiv![/bold green]")
+    console.print("[bold green]✓ Successfully published to Beehiiv![/bold green]")
     console.print(f"  Post ID: [yellow]{record.post_id}[/yellow]")
     if record.web_url:
         console.print(f"  Live Preview URL: [cyan]{record.web_url}[/cyan]\n")
 
     if article.social:
-        console.print("[bold magenta]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold magenta]")
+        console.print(
+            "[bold magenta]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold magenta]"
+        )
         console.print("[bold white]READY FOR MULTI-PLATFORM DISTRIBUTION:[/bold white]")
-        console.print("[bold magenta]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold magenta]\n")
+        console.print(
+            "[bold magenta]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold magenta]\n"
+        )
         console.print("[bold cyan][LinkedIn Post][/bold cyan]")
         console.print(article.social.linkedin_post)
         console.print("\n[bold cyan][Reddit Discussion Post (Anti-Spam / Organic)][/bold cyan]")
@@ -120,14 +137,17 @@ def diff_inspect(files_changed: int, benchmark: bool):
         "commits": [
             {
                 "added": ["benchmarks/opa_latency_eval.py", "benchmarks/policy_results.json"],
-                "modified": ["README.md", "evals/security_tests.py"] + [f"tests/test_{i}.py" for i in range(files_changed)],
+                "modified": ["README.md", "evals/security_tests.py"]
+                + [f"tests/test_{i}.py" for i in range(files_changed)],
                 "removed": [],
             }
         ],
         "ref": "refs/heads/main",
     }
     event = normalizer.normalize("push", payload)
-    console.print(f"[bold]Is Editorially Interesting:[/bold] {'[green]YES[/green]' if event.is_interesting else '[red]NO[/red]'}")
+    console.print(
+        f"[bold]Is Editorially Interesting:[/bold] {'[green]YES[/green]' if event.is_interesting else '[red]NO[/red]'}"
+    )
     console.print(f"[bold]Event Headline:[/bold] {event.headline}")
     console.print(f"[bold]Editorial Rationale:[/bold] {event.rationale}")
 
@@ -143,7 +163,12 @@ def list_articles():
     table.add_column("Revisions", justify="center")
 
     for art in articles:
-        table.add_row(art.id, art.status.value, art.topic[:55] + ("..." if len(art.topic) > 55 else ""), str(art.revisions_count))
+        table.add_row(
+            art.id,
+            art.status.value,
+            art.topic[:55] + ("..." if len(art.topic) > 55 else ""),
+            str(art.revisions_count),
+        )
 
     console.print(table)
 

@@ -1,6 +1,7 @@
 import pytest
+
 from agents.validator.agent import ValidatorAgent
-from packages.schemas import JobContract, AgentType
+from packages.schemas import AgentType, JobContract
 
 
 @pytest.mark.asyncio
@@ -9,8 +10,7 @@ async def test_validator_detects_syntax_errors():
 
     # Broken Python
     broken_markdown = (
-        "Here is some broken Python:\n\n"
-        "```python\ndef bad_syntax(\n    return 42\n```\n"
+        "Here is some broken Python:\n\n```python\ndef bad_syntax(\n    return 42\n```\n"
     )
 
     job = JobContract(

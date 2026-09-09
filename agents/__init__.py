@@ -1,16 +1,16 @@
+from .analytics.agent import AnalyticsAgent
+from .architect.agent import ArchitectAgent
 from .base import BaseAgent
 from .discovery.agent import DiscoveryAgent
-from .scorer.agent import ScorerAgent
-from .researcher.agent import ResearcherAgent
-from .architect.agent import ArchitectAgent
-from .writer.agent import WriterAgent
-from .factchecker.agent import FactCheckerAgent
-from .validator.agent import ValidatorAgent
-from .seo.agent import SEOAgent
-from .publisher.agent import PublisherAgent
-from .social.agent import SocialAgent
-from .analytics.agent import AnalyticsAgent
 from .evergreen.agent import EvergreenAgent
+from .factchecker.agent import FactCheckerAgent
+from .publisher.agent import PublisherAgent
+from .researcher.agent import ResearcherAgent
+from .scorer.agent import ScorerAgent
+from .seo.agent import SEOAgent
+from .social.agent import SocialAgent
+from .validator.agent import ValidatorAgent
+from .writer.agent import WriterAgent
 
 __all__ = [
     "BaseAgent",

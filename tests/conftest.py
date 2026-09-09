@@ -2,10 +2,10 @@
 Shared pytest fixtures and test harness configuration for EDGE Content Engine.
 """
 
-import os
 import shutil
 import tempfile
 from typing import Generator
+
 import pytest
 
 from packages.schemas import (

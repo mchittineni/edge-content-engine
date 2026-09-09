@@ -2,23 +2,24 @@
 Agent Dispatcher: Routes JobContract messages to the corresponding agent instance.
 """
 
-from typing import Dict, Type
-from packages.schemas import AgentType, JobContract
+from typing import Dict
+
 from agents import (
+    AnalyticsAgent,
+    ArchitectAgent,
     BaseAgent,
     DiscoveryAgent,
-    ScorerAgent,
-    ResearcherAgent,
-    ArchitectAgent,
-    WriterAgent,
-    FactCheckerAgent,
-    ValidatorAgent,
-    SEOAgent,
-    PublisherAgent,
-    SocialAgent,
-    AnalyticsAgent,
     EvergreenAgent,
+    FactCheckerAgent,
+    PublisherAgent,
+    ResearcherAgent,
+    ScorerAgent,
+    SEOAgent,
+    SocialAgent,
+    ValidatorAgent,
+    WriterAgent,
 )
+from packages.schemas import AgentType, JobContract
 
 
 class AgentDispatcher:

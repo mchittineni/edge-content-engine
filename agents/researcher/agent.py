@@ -2,10 +2,11 @@
 Researcher Bot: Gathers primary documentation, GitHub evidence, and structured claims.
 """
 
-from typing import Dict, Any
-from packages.schemas import AgentType, ResearchPackage
-from packages.llm import TaskTier
+from typing import Any, Dict
+
 from agents.base import BaseAgent
+from packages.llm import TaskTier
+from packages.schemas import AgentType, ResearchPackage
 
 
 class ResearcherAgent(BaseAgent):

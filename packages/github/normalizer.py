@@ -3,7 +3,8 @@ GitHub Webhook Event Normalizer & Editorial Filter.
 Filters out noise and extracts genuine engineering moments into opportunities.
 """
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict
+
 from pydantic import BaseModel
 
 
@@ -54,7 +55,7 @@ class GitHubEventNormalizer:
         if event_type == "push":
             commits = payload.get("commits", [])
             ref = payload.get("ref", "")
-            
+
             # Aggregate changed files across commits
             all_files = set()
             for commit in commits:

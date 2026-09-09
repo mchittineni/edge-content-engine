@@ -9,9 +9,10 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Dict, Any, List
-from packages.schemas import AgentType, CodeValidationCheck
+from typing import Any, Dict, List
+
 from agents.base import BaseAgent
+from packages.schemas import AgentType, CodeValidationCheck
 
 
 class ValidatorAgent(BaseAgent):
@@ -50,7 +51,7 @@ class ValidatorAgent(BaseAgent):
             # Check basic bracket balance and HCL shape
             open_braces = block.count("{")
             close_braces = block.count("}")
-            
+
             if open_braces != close_braces:
                 code_checks.append(
                     CodeValidationCheck(

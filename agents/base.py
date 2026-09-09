@@ -2,11 +2,12 @@
 Abstract BaseAgent defining the standard stateless contract for all EDGE agents.
 """
 
-from abc import ABC, abstractmethod
 import time
-from typing import Dict, Any, Optional
-from packages.schemas import JobContract, JobStatus, AgentType, JobMetadata
+from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional
+
 from packages.llm import LLMClient
+from packages.schemas import AgentType, JobContract, JobStatus
 
 
 class BaseAgent(ABC):

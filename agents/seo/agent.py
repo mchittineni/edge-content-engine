@@ -2,10 +2,11 @@
 SEO Bot: High-intent titles, meta descriptions, slugs, keywords, and OpenGraph tags.
 """
 
-from typing import Dict, Any
-from packages.schemas import AgentType, SEOBundle
-from packages.llm import TaskTier
+from typing import Any, Dict
+
 from agents.base import BaseAgent
+from packages.llm import TaskTier
+from packages.schemas import AgentType, SEOBundle
 
 
 class SEOAgent(BaseAgent):

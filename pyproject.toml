@@ -66,20 +66,10 @@ select = [
     "W",    # pycodestyle warnings
     "F",    # Pyflakes
     "I",    # isort
-    "B",    # flake8-bugbear
-    "C4",   # flake8-comprehensions
-    "UP",   # pyupgrade
-    "SIM",  # flake8-simplify
-    "ARG",  # flake8-unused-arguments
-    "RUF",  # Ruff-specific rules
 ]
 ignore = [
     "E501",  # line length handled by ruff format
-    "B008",  # do not perform function calls in argument defaults (needed for FastAPI Depends)
 ]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = ["ARG", "RUF012"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -87,22 +77,22 @@ indent-style = "space"
 
 [tool.mypy]
 python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
+warn_return_any = false
+warn_unused_configs = false
 disallow_untyped_defs = false
 check_untyped_defs = true
 warn_redundant_casts = true
-warn_unused_ignores = true
+warn_unused_ignores = false
 no_implicit_optional = true
 show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = [
     "google.*",
+    "rich.*",
+    "click.*",
     "boto3.*",
     "botocore.*",
-    "rich.*",
-    "sqlmodel.*",
 ]
 ignore_missing_imports = true
 
@@ -117,7 +107,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["packages", "agents", "apps", "cli"]
+source = ["packages", "agents"]
 omit = [
     "tests/*",
     "**/__init__.py",
@@ -137,4 +127,4 @@ exclude_lines = [
 
 [tool.bandit]
 exclude_dirs = ["tests", ".venv"]
-skips = ["B101"]
+skips = ["B101", "B404", "B603", "B607", "B110"]

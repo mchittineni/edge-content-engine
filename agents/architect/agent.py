@@ -3,10 +3,11 @@ Architect Bot: Extracts cloud topologies, generates Mermaid/ASCII diagrams,
 and interfaces with tf-arch-diagram-generator.
 """
 
-from typing import Dict, Any
-from packages.schemas import AgentType, ArchitecturePackage
-from packages.llm import TaskTier
+from typing import Any, Dict
+
 from agents.base import BaseAgent
+from packages.llm import TaskTier
+from packages.schemas import AgentType, ArchitecturePackage
 
 
 class ArchitectAgent(BaseAgent):
