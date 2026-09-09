@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: edge-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - EDGE_ENV=local
+      - DATABASE_URL=sqlite:///./content/edge.db
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - BEEHIIV_API_TOKEN=${BEEHIIV_API_TOKEN:-}
+      - BEEHIIV_PUBLICATION_ID=${BEEHIIV_PUBLICATION_ID:-}
+    volumes:
+      - ./content:/app/content
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: edge-worker
+    restart: unless-stopped
+    command: ["python", "-m", "apps.workers.runner"]
+    environment:
+      - EDGE_ENV=local
+      - DATABASE_URL=sqlite:///./content/edge.db
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - BEEHIIV_API_TOKEN=${BEEHIIV_API_TOKEN:-}
+      - BEEHIIV_PUBLICATION_ID=${BEEHIIV_PUBLICATION_ID:-}
+    volumes:
+      - ./content:/app/content
+    depends_on:
+      - api
