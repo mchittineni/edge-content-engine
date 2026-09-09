@@ -2,6 +2,12 @@
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["packages*", "agents*", "apps*", "cli*"]
+exclude = ["tests*", "content*", "prompts*", "infrastructure*"]
+namespaces = false
+
 [project]
 name = "edge-content-engine"
 version = "0.1.0"
