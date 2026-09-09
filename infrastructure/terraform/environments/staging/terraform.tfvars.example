@@ -1,0 +1,4 @@
+aws_region      = "us-east-1"
+github_repo     = "mchittineni/edge-content-engine"
+github_branches = ["staging", "main"]
+image_tag       = "staging"
