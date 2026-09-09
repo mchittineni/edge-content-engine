@@ -6,6 +6,7 @@ Handles GitHub webhooks, article lifecycle queries, and review actions.
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi import Path as FPath
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -39,7 +40,7 @@ async def list_articles():
 
 
 @app.get("/api/v1/articles/{article_id}", response_model=ArticleRecord)
-async def get_article(article_id: str):
+async def get_article(article_id: str = FPath(pattern=r"^[a-zA-Z0-9_\-]+$")):
     article = default_lake.load_article_state(article_id)
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
@@ -52,7 +53,9 @@ class ApprovalActionRequest(BaseModel):
 
 
 @app.post("/api/v1/articles/{article_id}/review")
-async def review_article(article_id: str, body: ApprovalActionRequest):
+async def review_article(
+    body: ApprovalActionRequest, article_id: str = FPath(pattern=r"^[a-zA-Z0-9_\-]+$")
+):
     article = default_lake.load_article_state(article_id)
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
