@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EDGE Content Review Gate | review.edgeinfra.dev</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111827;
+      --border: #1f2937;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f9fafb;
+      --text-muted: #9ca3af;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(17, 24, 39, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+    .badge-edge {
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      color: #000;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #1f2937;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      border: 1px solid #374151;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+    }
+
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .article-header {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .meta-bar {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .status-tag {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+      border: 1px solid var(--warning);
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 0.75rem;
+    }
+    .thesis-text {
+      color: var(--accent);
+      font-size: 1.05rem;
+      font-style: italic;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .score-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .score-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--success);
+      margin: 0.25rem 0;
+    }
+    .score-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .content-split {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 2rem;
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .panel h2 {
+      font-size: 1.15rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      background: #0d1117;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      border: 1px solid #21262d;
+      color: #c9d1d9;
+    }
+
+    .evidence-item {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .evidence-item:last-child { border-bottom: none; }
+    .evidence-claim { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; }
+    .evidence-source { font-size: 0.75rem; color: var(--accent); }
+
+    .actions-bar {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .btn {
+      flex: 1;
+      padding: 0.85rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .btn-approve {
+      background: var(--success);
+      color: #000;
+    }
+    .btn-approve:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn-changes {
+      background: #374151;
+      color: var(--text);
+    }
+    .btn-changes:hover { background: #4b5563; }
+    .btn-reject {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+      border: 1px solid var(--danger);
+    }
+    .btn-reject:hover { background: var(--danger); color: #fff; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <span class="badge-edge">EDGE</span>
+      <span>Content Engine Review</span>
+    </div>
+    <div class="user-pill">
+      <div class="status-dot"></div>
+      <span>Manideep Chittineni (Editor-in-Chief)</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="article-header">
+      <div class="meta-bar">
+        <span class="status-tag" id="article-status">AWAITING_APPROVAL</span>
+        <span>ID: <strong id="article-id">EDGE-2026-001</strong></span>
+        <span>Category: <strong>Cloud Architecture</strong></span>
+      </div>
+      <h1 id="article-title">Terraform Plans Are Terrible Architecture Diagrams</h1>
+      <p class="thesis-text" id="article-thesis">"Treating declarative CLI state mutation plans as system architecture diagrams creates catastrophic cognitive gaps in cloud engineering."</p>
+      
+      <div class="actions-bar">
+        <button class="btn btn-approve" onclick="submitDecision('approve')">✓ APPROVE FOR BEEHIIV</button>
+        <button class="btn btn-changes" onclick="submitDecision('request_changes')">✎ REQUEST CHANGES</button>
+        <button class="btn btn-reject" onclick="submitDecision('reject')">✕ REJECT</button>
+      </div>
+    </div>
+
+    <div class="score-grid">
+      <div class="score-card">
+        <div class="score-label">Opportunity Score</div>
+        <div class="score-value">53/60</div>
+        <span style="font-size:0.75rem; color:var(--success)">RESEARCH IMMEDIATELY</span>
+      </div>
+      <div class="score-card">
+        <div class="score-label">Technical QA</div>
+        <div class="score-value">96%</div>
+        <span style="font-size:0.75rem; color:var(--success)">PASSED AUDIT</span>
+      </div>
+      <div class="score-card">
+        <div class="score-label">Citation Score</div>
+        <div class="score-value">100%</div>
+        <span style="font-size:0.75rem; color:var(--text-muted)">TIER 1 PRIMARY DOCS</span>
+      </div>
+      <div class="score-card">
+        <div class="score-label">SEO Intent</div>
+        <div class="score-value">91%</div>
+        <span style="font-size:0.75rem; color:var(--text-muted)">HIGH TARGET VOLUME</span>
+      </div>
+    </div>
+
+    <div class="content-split">
+      <div>
+        <div class="panel">
+          <h2>Article Draft (14-Point Format)</h2>
+          <div id="draft-content" style="line-height: 1.6; font-size: 0.95rem; color: #e5e7eb;">
+            <p><strong>TL;DR:</strong> Terraform execution plans are chronological diff lists, not structural topologies. To understand blast radius and systemic risk, platform teams must generate spatial topology graphs directly from AST and state.</p><br>
+            <p><strong>Why this matters:</strong> When reviewing a 1,200-line plan file, humans mentally synthesize individual <code>+</code> and <code>~</code> line items. In large-scale AWS/GCP deployments, invisible dependency cascades lead to unexpected outages.</p><br>
+            <p><strong>Implementation:</strong> Parse <code>terraform plan -json</code> to extract resource mutation nodes and reconstruct edge references directly into visual topology diagrams.</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <h2>Architecture Topology (Mermaid)</h2>
+          <pre id="diagram-code">graph TD
+  subgraph Edge
+    CF[CloudFront] --> WAF[AWS WAF]
+  end
+  subgraph Application
+    WAF --> APIGW[API Gateway]
+    APIGW --> ECS[ECS Fargate]
+  end
+  subgraph Data
+    ECS --> RDS[(Aurora PostgreSQL)]
+  end</pre>
+        </div>
+
+        <div class="panel">
+          <h2>Verified Evidence Citations</h2>
+          <div class="evidence-item">
+            <div class="evidence-claim">Terraform CLI output flattens the internal resource DAG</div>
+            <div class="evidence-source">HashiCorp Official Terraform Plan Specification (Tier 1)</div>
+          </div>
+          <div class="evidence-item">
+            <div class="evidence-claim">AWS OIDC token federation eliminates static IAM credentials</div>
+            <div class="evidence-source">AWS IAM Identity Provider & GitHub Actions Docs (Tier 1)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    async function submitDecision(action) {
+      const articleId = document.getElementById('article-id').textContent;
+      try {
+        const res = await fetch(`http://localhost:8000/api/v1/articles/${articleId}/review`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action })
+        });
+        const data = await res.json();
+        alert(`Article ${articleId} state updated to: ${data.new_state}`);
+        document.getElementById('article-status').textContent = data.new_state;
+      } catch (err) {
+        alert(`Action recorded locally: ${action.toUpperCase()}`);
+        document.getElementById('article-status').textContent = action.toUpperCase();
+      }
+    }
+  </script>
+</body>
+</html>
