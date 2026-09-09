@@ -1,0 +1,31 @@
+{
+  "name": "EDGE Content Engine Dev Environment",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11-bookworm",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.testing.pytestEnabled": true,
+        "python.testing.pytestArgs": ["tests"],
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+          }
+        }
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "matangover.mypy",
+        "hashicorp.terraform",
+        "ms-azuretools.vscode-docker",
+        "tamasfe.even-better-toml"
+      ]
+    }
+  },
+  "postCreateCommand": "pip install --upgrade pip && pip install -e \".[dev]\" && pre-commit install"
+}

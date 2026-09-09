@@ -1,0 +1,43 @@
+# Git and CI/CD
+.git/
+.github/
+.gitignore
+
+# Virtual Environments & Python Cache
+.venv/
+venv/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Local Secrets and Environment
+.env
+.env.*
+!.env.example
+
+# IDE & Editor Configs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Infrastructure & Terraform State
+infrastructure/terraform/.terraform/
+*.tfstate
+*.tfstate.*
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
