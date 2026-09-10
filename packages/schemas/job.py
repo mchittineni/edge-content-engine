@@ -3,14 +3,14 @@ Standard JobContract for decoupled, asynchronous agent communication.
 """
 
 import uuid
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class AgentType(str, Enum):
+class AgentType(StrEnum):
     DISCOVERY = "discovery"
     SCORER = "scorer"
     RESEARCHER = "researcher"
@@ -26,7 +26,7 @@ class AgentType(str, Enum):
     EVERGREEN = "evergreen"
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
@@ -36,9 +36,9 @@ class JobStatus(str, Enum):
 
 class JobMetadata(BaseModel):
     trace_id: str = Field(default_factory=lambda: f"trace_{uuid.uuid4().hex[:12]}")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    model_used: Optional[str] = None
-    prompt_version: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    model_used: str | None = None
+    prompt_version: str | None = None
     cost_usd: float = 0.0
     latency_ms: float = 0.0
     tokens_input: int = 0
@@ -57,7 +57,7 @@ class JobContract(BaseModel):
     status: JobStatus = JobStatus.PENDING
     attempt: int = 1
     max_attempts: int = 3
-    input_payload: Dict[str, Any] = Field(default_factory=dict)
-    output_payload: Dict[str, Any] = Field(default_factory=dict)
-    error_message: Optional[str] = None
+    input_payload: dict[str, Any] = Field(default_factory=dict)
+    output_payload: dict[str, Any] = Field(default_factory=dict)
+    error_message: str | None = None
     metadata: JobMetadata = Field(default_factory=JobMetadata)

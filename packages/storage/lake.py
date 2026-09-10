@@ -3,12 +3,15 @@ Content Lake storage abstraction supporting both local filesystem and AWS S3.
 """
 
 import json
+import logging
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from packages.schemas import ArticleRecord
+
+logger = logging.getLogger(__name__)
 
 
 class ContentLake:
@@ -17,7 +20,7 @@ class ContentLake:
     drafts, diagrams, and publications.
     """
 
-    def __init__(self, base_dir: Optional[str] = None, s3_bucket: Optional[str] = None):
+    def __init__(self, base_dir: str | None = None, s3_bucket: str | None = None):
         dir_str = base_dir or os.getenv("CONTENT_DIR") or "./content"
         self.base_dir = Path(dir_str)
         self.s3_bucket = s3_bucket or os.getenv("S3_CONTENT_BUCKET")
@@ -48,7 +51,7 @@ class ContentLake:
         path.write_text(content, encoding="utf-8")
         return str(path)
 
-    def save_research(self, article_id: str, research_data: Dict[str, Any]) -> str:
+    def save_research(self, article_id: str, research_data: dict[str, Any]) -> str:
         path = self._resolve_safe_path("research", f"{article_id}_research.json")
         path.write_text(json.dumps(research_data, indent=2, default=str), encoding="utf-8")
         return str(path)
@@ -68,27 +71,30 @@ class ContentLake:
         path.write_text(json.dumps(article.model_dump(), indent=2, default=str), encoding="utf-8")
         return str(path)
 
-    def load_article_state(self, article_id: str) -> Optional[ArticleRecord]:
+    def load_article_state(self, article_id: str) -> ArticleRecord | None:
         state_dir = (self.base_dir / "state").resolve()
         for file_path in state_dir.glob("*.json"):
             if file_path.stem == article_id:
                 try:
-                    with open(file_path, encoding="utf-8") as f:
+                    with file_path.open(encoding="utf-8") as f:
                         data = json.load(f)
                     return ArticleRecord.model_validate(data)
-                except Exception:
+                except (OSError, json.JSONDecodeError, ValueError):
+                    # ValueError covers pydantic ValidationError.
+                    logger.warning("Corrupt or unreadable state file: %s", file_path, exc_info=True)
                     return None
         return None
 
-    def list_articles(self) -> List[ArticleRecord]:
+    def list_articles(self) -> list[ArticleRecord]:
         state_dir = self.base_dir / "state"
         articles = []
         for file in state_dir.glob("*.json"):
             try:
                 data = json.loads(file.read_text(encoding="utf-8"))
                 articles.append(ArticleRecord.model_validate(data))
-            except Exception:
-                pass
+            except (OSError, json.JSONDecodeError, ValueError):
+                # Skip corrupt records rather than failing the whole listing.
+                logger.warning("Skipping corrupt state file: %s", file, exc_info=True)
         return sorted(articles, key=lambda a: a.created_at, reverse=True)
 
 

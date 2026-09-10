@@ -3,7 +3,7 @@ GitHub Webhook Event Normalizer & Editorial Filter.
 Filters out noise and extracts genuine engineering moments into opportunities.
 """
 
-from typing import Any, Dict
+from typing import Any, ClassVar
 
 from pydantic import BaseModel
 
@@ -26,11 +26,35 @@ class GitHubEventNormalizer:
     - Triggers on benchmarks, Terraform/IaC files, security policies, and major releases
     """
 
-    BENCHMARK_KEYWORDS = ["benchmark", "bench", "iacsecbench", "latency", "throughput", "profile"]
-    IAC_KEYWORDS = [".tf", "terraform", "terragrunt", "opentofu", "cloudformation", "k8s", "helm"]
-    SECURITY_KEYWORDS = ["opa", "rego", "policy", "cve", "guard", "security", "trivy", "checkov"]
+    BENCHMARK_KEYWORDS: ClassVar[list[str]] = [
+        "benchmark",
+        "bench",
+        "iacsecbench",
+        "latency",
+        "throughput",
+        "profile",
+    ]
+    IAC_KEYWORDS: ClassVar[list[str]] = [
+        ".tf",
+        "terraform",
+        "terragrunt",
+        "opentofu",
+        "cloudformation",
+        "k8s",
+        "helm",
+    ]
+    SECURITY_KEYWORDS: ClassVar[list[str]] = [
+        "opa",
+        "rego",
+        "policy",
+        "cve",
+        "guard",
+        "security",
+        "trivy",
+        "checkov",
+    ]
 
-    def normalize(self, event_type: str, payload: Dict[str, Any]) -> NormalizedEvent:
+    def normalize(self, event_type: str, payload: dict[str, Any]) -> NormalizedEvent:
         repo_name = payload.get("repository", {}).get("full_name", "unknown/repo")
 
         # 1. Release Events

@@ -1,5 +1,5 @@
-from .job import AgentType, JobContract, JobMetadata, JobStatus
-from .models import (
+from packages.schemas.job import AgentType, JobContract, JobMetadata, JobStatus
+from packages.schemas.models import (
     ArchitecturePackage,
     ArticleDraft,
     ArticleRecord,
@@ -18,21 +18,21 @@ from .models import (
 
 __all__ = [
     "AgentType",
-    "JobStatus",
-    "JobMetadata",
-    "JobContract",
-    "ArticleStatus",
-    "SourceTier",
-    "OpportunityScore",
-    "SourceReference",
-    "ClaimEvidence",
-    "ResearchPackage",
     "ArchitecturePackage",
     "ArticleDraft",
+    "ArticleRecord",
+    "ArticleStatus",
+    "ClaimEvidence",
     "CodeValidationCheck",
+    "JobContract",
+    "JobMetadata",
+    "JobStatus",
+    "OpportunityScore",
+    "PublicationRecord",
     "QAReport",
+    "ResearchPackage",
     "SEOBundle",
     "SocialPackage",
-    "PublicationRecord",
-    "ArticleRecord",
+    "SourceReference",
+    "SourceTier",
 ]

@@ -3,19 +3,22 @@ Provider-agnostic LLM client with JSON structured output and budget accounting.
 """
 
 import json
+import logging
 import os
-from typing import Optional, Type, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel
 
 from packages.llm.budget import ArticleBudgetTracker
 from packages.llm.routing import TASK_MODEL_MAPPING, TaskTier
 
+logger = logging.getLogger(__name__)
+
 T = TypeVar("T", bound=BaseModel)
 
 
 class LLMClient:
-    def __init__(self, budget_tracker: Optional[ArticleBudgetTracker] = None):
+    def __init__(self, budget_tracker: ArticleBudgetTracker | None = None):
         self.gemini_key = os.getenv("GEMINI_API_KEY")
         self.openai_key = os.getenv("OPENAI_API_KEY")
         self.budget_tracker = budget_tracker or ArticleBudgetTracker()
@@ -23,10 +26,10 @@ class LLMClient:
     async def generate_structured(
         self,
         prompt: str,
-        response_model: Type[T],
+        response_model: type[T],
         task_tier: TaskTier = TaskTier.RESEARCH,
         agent_name: str = "agent",
-        system_instruction: Optional[str] = None,
+        system_instruction: str | None = None,
     ) -> T:
         model_name = TASK_MODEL_MAPPING.get(task_tier, "gemini-2.0-flash")
 
@@ -63,11 +66,15 @@ class LLMClient:
                 raw_text = response.text or "{}"
                 out_tokens = len(raw_text) // 4
             except Exception:
-                # Fallback to direct HTTP or simulation if error
-                raw_text = self._mock_or_clean_fallback(response_model, prompt)
+                logger.warning(
+                    "LLM provider call failed for model %s; using offline fallback.",
+                    model_name,
+                    exc_info=True,
+                )
+                raw_text = self._mock_or_clean_fallback(response_model)
                 out_tokens = len(raw_text) // 4
         else:
-            raw_text = self._mock_or_clean_fallback(response_model, prompt)
+            raw_text = self._mock_or_clean_fallback(response_model)
             out_tokens = len(raw_text) // 4
 
         # Track usage
@@ -93,7 +100,7 @@ class LLMClient:
             text = text[:-3]
         return text.strip()
 
-    def _mock_or_clean_fallback(self, response_model: Type[T], prompt: str) -> str:
+    def _mock_or_clean_fallback(self, response_model: type[T]) -> str:
         """
         Provides intelligent mock generation conforming to schemas when API keys are not yet configured.
         """
@@ -110,7 +117,7 @@ class LLMClient:
                     "personal_authority": 10,
                 }
             )
-        elif model_name == "ResearchPackage":
+        if model_name == "ResearchPackage":
             return json.dumps(
                 {
                     "article_id": "EDGE-2026-001",
@@ -156,7 +163,7 @@ class LLMClient:
                     ],
                 }
             )
-        elif model_name == "ArchitecturePackage":
+        if model_name == "ArchitecturePackage":
             return json.dumps(
                 {
                     "article_id": "EDGE-2026-001",
@@ -170,7 +177,7 @@ class LLMClient:
                     ],
                 }
             )
-        elif model_name == "ArticleDraft":
+        if model_name == "ArticleDraft":
             return json.dumps(
                 {
                     "article_id": "EDGE-2026-001",
@@ -194,7 +201,7 @@ class LLMClient:
                     "full_markdown": "# Terraform Plans Are Terrible Architecture Diagrams\n\n*By Manideep Chittineni — EDGE Publication*\n\n...",
                 }
             )
-        elif model_name == "QAReport":
+        if model_name == "QAReport":
             return json.dumps(
                 {
                     "article_id": "EDGE-2026-001",
@@ -218,7 +225,7 @@ class LLMClient:
                     ],
                 }
             )
-        elif model_name == "SEOBundle":
+        if model_name == "SEOBundle":
             return json.dumps(
                 {
                     "article_id": "EDGE-2026-001",
@@ -246,7 +253,7 @@ class LLMClient:
                     "og_description": "Stop mentally compiling 1,000-line plan outputs. Reconstruct actual system topology from your IaC.",
                 }
             )
-        elif model_name == "SocialPackage":
+        if model_name == "SocialPackage":
             return json.dumps(
                 {
                     "article_id": "EDGE-2026-001",
@@ -264,5 +271,4 @@ class LLMClient:
                     ],
                 }
             )
-        else:
-            return "{}"
+        return "{}"
