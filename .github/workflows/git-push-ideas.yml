@@ -3,24 +3,36 @@ name: Git Push Idea Analyzer
 on:
   push:
     paths:
-      - '**.tf'
-      - '**.rego'
-      - 'benchmarks/**'
-      - 'tests/**'
+      - "**.tf"
+      - "**.rego"
+      - "benchmarks/**"
+      - "tests/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze-diff:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
+          persist-credentials: false
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install Dependencies
         run: pip install -e .
@@ -28,5 +40,4 @@ jobs:
       - name: Evaluate Commit Diff
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          python -m cli.main diff-inspect 10 --benchmark
+        run: python -m cli.main diff-inspect 10 --benchmark

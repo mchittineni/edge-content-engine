@@ -3,30 +3,62 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "04:00"
     open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "python"
+    labels: ["dependencies", "python"]
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      dev-tooling:
+        patterns: ["ruff", "mypy", "pytest*", "bandit", "pip-audit", "pre-commit", "types-*"]
+      production-minor-patch:
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "semiannually"
       day: "monday"
       time: "04:00"
     open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "github-actions"
+    labels: ["dependencies", "github-actions"]
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]
 
   - package-ecosystem: "terraform"
-    directory: "/infrastructure/terraform"
+    directory: "/infrastructure/terraform/environments/prod"
     schedule:
       interval: "monthly"
-    open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "terraform"
+    labels: ["dependencies", "terraform"]
+    commit-message:
+      prefix: "chore"
+
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure/terraform/environments/staging"
+    schedule:
+      interval: "monthly"
+    labels: ["dependencies", "terraform"]
+    commit-message:
+      prefix: "chore"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "semiannually"
+      day: "monday"
+      time: "04:00"
+    labels: ["dependencies", "docker"]
+    commit-message:
+      prefix: "chore"
+
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels: ["dependencies"]

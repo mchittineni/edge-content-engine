@@ -1,0 +1,169 @@
+name: Terraform Apply
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        required: true
+        type: choice
+        options: [staging, prod]
+      image_tag:
+        description: Container image tag to deploy
+        required: false
+        type: string
+        default: latest
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  TF_VERSION: "1.9.8"
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "0"
+
+jobs:
+  plan:
+    name: Plan (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      has_changes: ${{ steps.plan.outputs.has_changes }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: edge-tf-plan-${{ inputs.environment }}
+
+      - name: Terraform init
+        working-directory: infrastructure/terraform/environments/${{ inputs.environment }}
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=edge-content-engine/${{ inputs.environment }}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ vars.TF_LOCK_TABLE }}" \
+            -backend-config="encrypt=true"
+
+      - name: Terraform format & validate
+        working-directory: infrastructure/terraform/environments/${{ inputs.environment }}
+        run: |
+          terraform fmt -check -recursive ../../
+          terraform validate
+
+      - name: Terraform plan
+        id: plan
+        working-directory: infrastructure/terraform/environments/${{ inputs.environment }}
+        run: |
+          set +e
+          terraform plan -detailed-exitcode -lock-timeout=5m \
+            -var="image_tag=${{ inputs.image_tag }}" \
+            -out=tfplan
+          code=$?
+          set -e
+          # -detailed-exitcode: 0 = no changes, 2 = changes present, 1 = error
+          case "$code" in
+            0) echo "has_changes=false" >> "$GITHUB_OUTPUT"; echo "No changes." ;;
+            2) echo "has_changes=true"  >> "$GITHUB_OUTPUT"; echo "Changes planned." ;;
+            *) echo "::error::terraform plan failed"; exit 1 ;;
+          esac
+
+      - name: Publish plan to job summary
+        if: always()
+        working-directory: infrastructure/terraform/environments/${{ inputs.environment }}
+        run: |
+          {
+            echo "## Terraform plan — \`${{ inputs.environment }}\`"
+            echo '```terraform'
+            terraform show -no-color tfplan 2>/dev/null | head -c 60000 || echo "(no plan produced)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload plan
+        if: steps.plan.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tfplan-${{ inputs.environment }}
+          path: infrastructure/terraform/environments/${{ inputs.environment }}/tfplan
+          retention-days: 5
+          include-hidden-files: true
+
+  apply:
+    name: Apply (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: plan
+    if: needs.plan.outputs.has_changes == 'true'
+    environment:
+      name: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: edge-tf-apply-${{ inputs.environment }}
+
+      - name: Terraform init
+        working-directory: infrastructure/terraform/environments/${{ inputs.environment }}
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=edge-content-engine/${{ inputs.environment }}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ vars.TF_LOCK_TABLE }}" \
+            -backend-config="encrypt=true"
+
+      - name: Download approved plan
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: tfplan-${{ inputs.environment }}
+          path: infrastructure/terraform/environments/${{ inputs.environment }}
+
+      - name: Terraform apply (saved plan)
+        working-directory: infrastructure/terraform/environments/${{ inputs.environment }}
+        run: terraform apply -lock-timeout=5m -auto-approve tfplan
+
+      - name: Record outputs
+        working-directory: infrastructure/terraform/environments/${{ inputs.environment }}
+        run: |
+          {
+            echo "## Applied — \`${{ inputs.environment }}\`"
+            echo '```json'
+            terraform output -json | head -c 20000
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
