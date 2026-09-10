@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help install dev-setup lint format typecheck security-check test test-cov pre-commit-install docker-build docker-up docker-down run-api run-worker review-cli dev clean
+.PHONY: help install dev-setup lint format typecheck security-check secrets-scan test test-cov test-fast pre-commit-install pre-commit-run verify tf-fmt tf-validate tf-security docker-build docker-up docker-down run-api run-worker review-cli dev clean
 
 help:  ## Display this help message
 	@echo "EDGE Content Engine - SDLC Commands"
@@ -16,8 +16,33 @@ dev-setup: install pre-commit-install  ## Bootstrap full local development envir
 	@test -f .env || cp .env.example .env
 	@echo "Development setup complete. Remember to populate API keys in .env"
 
-pre-commit-install:  ## Install git pre-commit hooks
+pre-commit-install:  ## Install git pre-commit, commit-msg, and pre-push hooks
 	pre-commit install --install-hooks
+
+pre-commit-run:  ## Run every pre-commit hook against all files
+	pre-commit run --all-files
+
+verify:  ## Run the full local gate - matches CI's Quality Gate
+	$(MAKE) lint
+	$(MAKE) typecheck
+	$(MAKE) security-check
+	$(MAKE) tf-fmt
+	$(MAKE) tf-validate
+	$(MAKE) test-cov
+	@echo "All local quality gates passed."
+
+tf-fmt:  ## Check Terraform formatting
+	terraform fmt -check -recursive infrastructure/terraform/
+
+tf-validate:  ## Validate every Terraform module and environment
+	@set -e; \
+	for d in $$(find infrastructure/terraform -name '*.tf' -exec dirname {} \; | sort -u); do \
+		echo "validate $$d"; \
+		(cd $$d && terraform init -backend=false -input=false >/dev/null && terraform validate); \
+	done
+
+tf-security:  ## Scan Terraform for misconfigurations (requires trivy)
+	trivy config infrastructure/ --severity HIGH,CRITICAL
 
 lint:  ## Run Ruff linter and formatter checks
 	ruff check .
@@ -30,15 +55,22 @@ format:  ## Format code automatically using Ruff
 typecheck:  ## Run static type checking across all modules
 	mypy packages agents apps cli
 
-security-check:  ## Run SAST security scanning (Bandit) and dependency audit (pip-audit)
+security-check:  ## Run SAST (Bandit) and dependency audit (pip-audit)
 	bandit -c pyproject.toml -r packages agents apps cli
-	pip-audit --desc on
+	pip-audit --desc on --strict
+
+secrets-scan:  ## Scan the working tree and history for committed secrets
+	pre-commit run gitleaks --all-files
 
 test:  ## Run pytest test suite
 	pytest -v tests/
 
-test-cov:  ## Run pytest with code coverage report and fail threshold
-	pytest --cov=packages --cov=agents --cov=apps --cov=cli --cov-report=term-missing --cov-report=xml tests/
+test-cov:  ## Run pytest with the coverage gate (identical to CI)
+	# Scope and fail-under come from pyproject.toml so local and CI agree.
+	pytest tests/
+
+test-fast:  ## Run the test suite without the coverage gate
+	pytest tests/ --no-cov -q
 
 docker-build:  ## Build the production-ready multi-stage Docker container
 	docker build -t edge-content-engine:latest .

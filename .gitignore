@@ -33,6 +33,8 @@ env/
 # Testing
 .pytest_cache/
 .coverage
+coverage.xml
+junit-*.xml
 htmlcov/
 
 # IDE
@@ -46,7 +48,9 @@ htmlcov/
 *.tfstate.*
 crash.log
 .terraform/
-.terraform.lock.hcl
+# .terraform.lock.hcl is intentionally NOT ignored: committing it is what makes
+# provider resolution reproducible across machines and CI. Without it, the same
+# `terraform validate` can pass locally and fail in CI on a different provider.
 override.tf
 override.tf.json
 *_override.tf
