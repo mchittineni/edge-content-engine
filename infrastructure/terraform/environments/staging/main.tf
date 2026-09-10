@@ -9,6 +9,12 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  # Partial backend configuration: values are supplied at init time via
+  # `-backend-config` so the same code works locally (`-backend=false`) and in
+  # CI. Remote state is mandatory for CI apply/destroy - local state would die
+  # with the runner and concurrent runs would corrupt each other.
+  backend "s3" {}
 }
 
 provider "aws" {

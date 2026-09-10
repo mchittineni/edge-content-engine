@@ -10,14 +10,11 @@ terraform {
     }
   }
 
-  # Production remote state backend configuration:
-  # backend "s3" {
-  #   bucket         = "edge-tf-state-prod"
-  #   key            = "edge-content-engine/prod/terraform.tfstate"
-  #   region         = "us-east-1"
-  #   dynamodb_table = "edge-tf-locks-prod"
-  #   encrypt        = true
-  # }
+  # Partial backend configuration: values are supplied at init time via
+  # `-backend-config` so the same code works locally (`-backend=false`) and in
+  # CI. Remote state is mandatory for CI apply/destroy - local state would die
+  # with the runner and concurrent runs would corrupt each other.
+  backend "s3" {}
 }
 
 provider "aws" {
