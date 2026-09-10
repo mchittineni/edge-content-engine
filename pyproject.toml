@@ -16,30 +16,33 @@ readme = "README.md"
 authors = [{ name = "Manideep Chittineni" }]
 requires-python = ">=3.11"
 dependencies = [
-    "pydantic>=2.7.0",
-    "pydantic-settings>=2.2.0",
-    "fastapi>=0.111.0",
-    "uvicorn[standard]>=0.30.0",
-    "sqlalchemy>=2.0.30",
-    "sqlmodel>=0.0.19",
-    "httpx>=0.27.0",
-    "rich>=13.7.1",
-    "click>=8.1.7",
-    "pyyaml>=6.0.1",
-    "jinja2>=3.1.4",
-    "boto3>=1.34.0",
-    "google-genai>=0.1.1",
+    "pydantic>=2.13.5",
+    "pydantic-settings>=2.15.0",
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.52.4",
+    "sqlalchemy>=2.0.52",
+    "sqlmodel>=0.0.42",
+    "httpx>=0.28.1",
+    "rich>=15.0.0",
+    "click>=8.5.0",
+    "pyyaml>=6.0.3",
+    "jinja2>=3.1.6",
+    "boto3>=1.43.91",
+    "google-genai>=2.22.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.2.0",
-    "pytest-asyncio>=0.23.0",
-    "pytest-cov>=5.0.0",
-    "ruff>=0.4.0",
-    "mypy>=1.10.0",
-    "pre-commit>=3.7.0",
-    "bandit>=1.7.8",
+    # Floors match the versions these configs were verified against. An older
+    # ruff or mypy silently ignores rules declared below and the gate weakens
+    # without failing - so these floors are part of the gate, not housekeeping.
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.6",
+    "mypy>=2.3.1",
+    "pre-commit>=4.0.0",
+    "bandit>=1.9.4",
     "pip-audit>=2.7.3",
     "types-pyyaml>=6.0.12",
     "types-boto3>=1.34.0",
@@ -51,6 +54,7 @@ edge = "cli.main:cli"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+src = ["."]
 exclude = [
     ".git",
     ".venv",
@@ -61,30 +65,82 @@ exclude = [
 ]
 
 [tool.ruff.lint]
+# Highest-practical strictness: correctness, security, modernization, and
+# async-safety rules on top of the pycodestyle/pyflakes baseline.
 select = [
-    "E",    # pycodestyle errors
-    "W",    # pycodestyle warnings
-    "F",    # Pyflakes
-    "I",    # isort
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "N",      # pep8-naming
+    "UP",     # pyupgrade (modern syntax)
+    "B",      # flake8-bugbear (likely bugs)
+    "A",      # flake8-builtins (shadowing)
+    "C4",     # flake8-comprehensions
+    "C90",    # mccabe complexity
+    "DTZ",    # flake8-datetimez (naive datetime bugs)
+    "ISC",    # implicit str concat
+    "ICN",    # import conventions
+    "LOG",    # flake8-logging
+    "G",      # flake8-logging-format
+    "PIE",    # flake8-pie
+    "T20",    # flake8-print (no stray print)
+    "PT",     # flake8-pytest-style
+    "RET",    # flake8-return
+    "SIM",    # flake8-simplify
+    "TID",    # flake8-tidy-imports
+    "ARG",    # unused arguments
+    "PTH",    # prefer pathlib
+    "ERA",    # commented-out code
+    "S",      # flake8-bandit (security)
+    "ASYNC",  # flake8-async (async correctness)
+    "BLE",    # blind except
+    "TRY",    # tryceratops (exception anti-patterns)
+    "RUF",    # Ruff-specific
 ]
 ignore = [
-    "E501",  # line length handled by ruff format
+    "E501",     # line length is owned by `ruff format`
+    "TRY003",   # long messages outside exception class - too noisy for this codebase
+    "ISC001",   # conflicts with `ruff format`
 ]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.per-file-ignores]
+# Tests legitimately use assert, fixture args, and hard-coded test data.
+# S105/S106 are dummy credentials used to prove auth headers are built
+# correctly; gitleaks still scans this directory for real secrets.
+"tests/**" = ["S101", "S105", "S106", "ARG001", "ARG002", "ARG005", "PLR2004"]
+# The storage lake deliberately uses os.path.* (not pathlib) because CodeQL's
+# taint analysis only recognizes os.path.basename/abspath as path sanitizers.
+# See commits d60c5eb / 3fd48af / 49721f5. Do not "modernize" to pathlib.
+"packages/storage/lake.py" = ["PTH100", "PTH118", "PTH119"]
+# The CLI is a user-facing terminal program; rich/click output is its purpose,
+# and Click injects every declared option/argument whether or not the body uses it.
+"cli/**" = ["T20", "ARG001"]
+# Agent `process()` signatures implement the BaseAgent contract; not every agent
+# needs every parameter, but the signature must stay uniform for the dispatcher.
+"agents/**" = ["ARG002"]
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+docstring-code-format = true
 
 [tool.mypy]
 python_version = "3.11"
-warn_return_any = false
-warn_unused_configs = false
-disallow_untyped_defs = false
-check_untyped_defs = true
-warn_redundant_casts = true
-warn_unused_ignores = false
-no_implicit_optional = true
+# Full strict mode. The codebase passes this cleanly - keep it that way.
+strict = true
+warn_unreachable = true
 show_error_codes = true
+show_column_numbers = true
+pretty = true
+# Third-party stubs are incomplete; do not let that silently weaken the gate.
+disallow_untyped_decorators = false
 
 [[tool.mypy.overrides]]
 module = [
@@ -99,7 +155,25 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "-v --strict-markers"
+# Put the repository root on sys.path so a bare `pytest` works whether or not
+# the project has been pip-installed. Without this, `make test` fails with
+# ModuleNotFoundError while `python -m pytest` succeeds - a confusing split.
+pythonpath = ["."]
+addopts = """
+    -v
+    --strict-markers
+    --strict-config
+    --cov --cov-report=term-missing --cov-report=xml
+"""
+# Warnings are errors: a new deprecation in our own code fails the build.
+# Third-party deprecations we cannot fix are allow-listed narrowly and on
+# purpose, so the list stays short and reviewable.
+filterwarnings = [
+    "error",
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:",
+    "ignore:The anyio.abc.BlockingPortal alias is deprecated:DeprecationWarning",
+]
+xfail_strict = true
 markers = [
     "unit: Isolated unit tests",
     "integration: Multi-component integration tests",
@@ -107,7 +181,9 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["packages", "agents"]
+# Measure every shipped package. Narrowing this silently weakens the gate:
+# the suite once reported 76% while true full-scope coverage was 58%.
+source = ["packages", "agents", "apps", "cli"]
 omit = [
     "tests/*",
     "**/__init__.py",
@@ -116,7 +192,7 @@ branch = true
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 70
+fail_under = 80  # ratchet upward; never lower to make a build pass
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
