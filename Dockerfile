@@ -1,7 +1,7 @@
 # ==============================================================================
 # Stage 1: Build virtual environment and wheels
 # ==============================================================================
-FROM python:3.11-slim AS builder
+FROM python:3.13-slim AS builder
 
 WORKDIR /build
 
@@ -10,14 +10,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml .
+# The source must be present before building the wheel. Copying only
+# pyproject.toml produced a wheel containing no packages, so the runtime image
+# installed an empty distribution and `edge --help` failed with
+# ModuleNotFoundError: No module named 'cli'.
+COPY pyproject.toml README.md ./
+COPY packages/ ./packages/
+COPY agents/ ./agents/
+COPY apps/ ./apps/
+COPY cli/ ./cli/
+
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip wheel --no-cache-dir --no-deps --wheel-dir /build/wheels -e .
+    pip wheel --no-cache-dir --no-deps --wheel-dir /build/wheels .
 
 # ==============================================================================
 # Stage 2: Minimal hardened runtime
 # ==============================================================================
-FROM python:3.11-slim AS runtime
+FROM python:3.13-slim AS runtime
 
 # Security hardening: Run as non-root user
 RUN groupadd -g 10001 appgroup && \
@@ -36,11 +45,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir /wheels/* && \
     rm -rf /wheels
 
-# Copy application source code
-COPY --chown=appuser:appgroup packages/ ./packages/
-COPY --chown=appuser:appgroup agents/ ./agents/
-COPY --chown=appuser:appgroup apps/ ./apps/
-COPY --chown=appuser:appgroup cli/ ./cli/
+# Application code arrives via the installed wheel above, so only non-package
+# data and metadata are copied here.
 COPY --chown=appuser:appgroup prompts/ ./prompts/
 COPY --chown=appuser:appgroup pyproject.toml README.md ./
 
