@@ -28,6 +28,7 @@ local command and CI cannot disagree. See ADR
 | `test_validator.py` | Code-block validation |
 | `test_pipeline.py` | End-to-end orchestration |
 | `test_observability.py` | Cost reporting |
+| `test_packaging.py` | Wheel contents and version-config consistency |
 
 ## Rules
 

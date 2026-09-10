@@ -122,7 +122,7 @@ This project adheres to strict software development lifecycle (SDLC) standards:
 
 - **Quality & Static Analysis**: Enforced via Ruff, strict Mypy, Bandit SAST, and Pytest test coverage.
 - **Git Hooks**: Pre-commit hooks (`.pre-commit-config.yaml`) run formatting, linting, and secret detection before every commit.
-- **CI/CD Quality Gates**: GitHub Actions run automated linting, type checks, security scanning (CodeQL + pip-audit), multi-python test matrix (3.11 & 3.12), Terraform validation, and container build smoke tests.
+- **CI/CD Quality Gates**: GitHub Actions run automated linting, type checks, security scanning (CodeQL + pip-audit), multi-python test matrix (3.13 & 3.14), Terraform validation, and container build smoke tests.
 - **Semantic Versioning & PR Hygiene**: Conventional Commits specification enforced on PR titles (`feat:`, `fix:`, `chore:`) with automated release drafting.
 - **Containerization**: Multi-stage, non-root `Dockerfile`, `docker-compose.yml`, and `.devcontainer/` specification for VS Code / GitHub Codespaces.
 

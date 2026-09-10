@@ -14,7 +14,7 @@ version = "0.1.0"
 description = "Event-driven, multi-agent engineering-media pipeline for the EDGE publication"
 readme = "README.md"
 authors = [{ name = "Manideep Chittineni" }]
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
     "pydantic>=2.13.5",
     "pydantic-settings>=2.15.0",
@@ -53,7 +53,7 @@ edge = "cli.main:cli"
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py313"
 src = ["."]
 exclude = [
     ".git",
@@ -132,7 +132,7 @@ indent-style = "space"
 docstring-code-format = true
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 # Full strict mode. The codebase passes this cleanly - keep it that way.
 strict = true
 warn_unreachable = true

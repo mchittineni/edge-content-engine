@@ -70,12 +70,19 @@ The production storage path is effectively unverified.
 
 ---
 
-## SDLC-5 — Container smoke test unverified locally
+## SDLC-5 — Container smoke test unverified locally — RESOLVED
 
-- **Severity:** Low
-- **Found by:** authoring `.github/workflows/ci.yml`
+The smoke test ran for the first time in CI and **found two real defects**,
+both invisible to an editable install:
 
-The `container` job's smoke test (`import apps.api.main`, `edge --help`) was
-written but never executed locally, because no Docker daemon was available on
-the authoring machine. It is expected to pass but should be confirmed on the
-first CI run.
+1. The Dockerfile copied only `pyproject.toml` into the builder stage, so
+   `pip wheel` produced a distribution containing no packages. The runtime
+   image installed it and `edge --help` failed with
+   `ModuleNotFoundError: No module named 'cli'`.
+2. No `agents/*/` subdirectory had an `__init__.py`, so with
+   `namespaces = false` setuptools excluded all thirteen agent
+   implementations from the wheel.
+
+Both are fixed, and `tests/test_packaging.py` now guards the second on the
+cheap side of the feedback loop. The wheel is verified by installing it into a
+clean virtualenv, which reproduces the container without needing Docker.

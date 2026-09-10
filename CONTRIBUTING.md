@@ -54,7 +54,7 @@ All commits and Pull Request titles MUST follow the [Conventional Commits v1.0.0
 ## 3. Local Development Setup
 
 ### Prerequisites
-- **Python 3.11+** (recommended: Python 3.11 or 3.12 via `pyenv` or `homebrew`)
+- **Python 3.13+** (CI tests 3.13 and 3.14; install via `pyenv` or `homebrew`)
 - **Docker & Docker Compose** (for containerized execution)
 - **Make**
 

@@ -32,6 +32,10 @@ claims to protect drift apart, and the green check hides it.
    touching repository settings.
 5. **Type checking is `--strict`.** The codebase passes it today; keeping it
    strict is cheaper than regaining it later.
+6. **Supported Python versions are 3.13 and 3.14**, tested as a matrix.
+   `requires-python`, the ruff `target-version`, and the mypy `python_version`
+   must agree - `tests/test_packaging.py` asserts it, because a ruff target
+   below `requires-python` silently permits syntax the project cannot run.
 
 ## Consequences
 
