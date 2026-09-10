@@ -2,7 +2,7 @@
 Evergreen Agent: Mines existing documentation, guides, and repositories to extract content calendars.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from agents.base import BaseAgent
 from packages.schemas import AgentType
@@ -11,7 +11,7 @@ from packages.schemas import AgentType
 class EvergreenAgent(BaseAgent):
     agent_type = AgentType.EVERGREEN
 
-    async def process(self, article_id: str, input_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, article_id: str, input_payload: dict[str, Any]) -> dict[str, Any]:
         guide_name = input_payload.get("guide_name", "ultimate-devops-guide")
 
         # Categorized clusters

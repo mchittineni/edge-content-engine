@@ -2,18 +2,21 @@
 Abstract BaseAgent defining the standard stateless contract for all EDGE agents.
 """
 
+import logging
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 from packages.llm import LLMClient
 from packages.schemas import AgentType, JobContract, JobStatus
+
+logger = logging.getLogger(__name__)
 
 
 class BaseAgent(ABC):
     agent_type: AgentType
 
-    def __init__(self, llm_client: Optional[LLMClient] = None):
+    def __init__(self, llm_client: LLMClient | None = None):
         self.llm = llm_client or LLMClient()
 
     async def execute_job(self, job: JobContract) -> JobContract:
@@ -32,6 +35,13 @@ class BaseAgent(ABC):
             job.output_payload = output_payload
             job.status = JobStatus.COMPLETED
         except Exception as e:
+            logger.exception(
+                "Agent %s failed job %s (attempt %d/%d)",
+                self.agent_type.value,
+                job.job_id,
+                job.attempt,
+                job.max_attempts,
+            )
             job.status = JobStatus.FAILED
             job.error_message = str(e)
             if job.attempt >= job.max_attempts:
@@ -42,6 +52,5 @@ class BaseAgent(ABC):
         return job
 
     @abstractmethod
-    async def process(self, article_id: str, input_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, article_id: str, input_payload: dict[str, Any]) -> dict[str, Any]:
         """Subclasses implement domain-specific agent logic."""
-        pass

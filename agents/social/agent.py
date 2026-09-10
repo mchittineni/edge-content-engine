@@ -3,7 +3,7 @@ Social Distribution Agent: Platform-tailored content packager for LinkedIn, Redd
 Enforces authentic community discourse rules (strictly no spam or promotional tone).
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from agents.base import BaseAgent
 from packages.llm import TaskTier
@@ -13,7 +13,7 @@ from packages.schemas import AgentType, SocialPackage
 class SocialAgent(BaseAgent):
     agent_type = AgentType.SOCIAL
 
-    async def process(self, article_id: str, input_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, article_id: str, input_payload: dict[str, Any]) -> dict[str, Any]:
         draft = input_payload.get("draft", {})
 
         prompt = (

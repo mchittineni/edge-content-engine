@@ -4,12 +4,12 @@ Runs terraform fmt/validate, ruff, and syntax parsers on embedded code blocks.
 """
 
 import ast
+import asyncio
 import re
 import shutil
-import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from agents.base import BaseAgent
 from packages.schemas import AgentType, CodeValidationCheck
@@ -18,9 +18,9 @@ from packages.schemas import AgentType, CodeValidationCheck
 class ValidatorAgent(BaseAgent):
     agent_type = AgentType.VALIDATOR
 
-    async def process(self, article_id: str, input_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, article_id: str, input_payload: dict[str, Any]) -> dict[str, Any]:
         markdown_text = input_payload.get("markdown", "")
-        code_checks: List[CodeValidationCheck] = []
+        code_checks: list[CodeValidationCheck] = []
 
         # 1. Extract Python snippets
         python_blocks = re.findall(r"```(?:python|py)\n(.*?)```", markdown_text, re.DOTALL)
@@ -45,7 +45,8 @@ class ValidatorAgent(BaseAgent):
 
         # 2. Extract Terraform / HCL snippets
         tf_blocks = re.findall(r"```(?:hcl|terraform|tf)\n(.*?)```", markdown_text, re.DOTALL)
-        has_terraform = shutil.which("terraform") is not None
+        terraform_bin = shutil.which("terraform")
+        has_terraform = terraform_bin is not None
 
         for idx, block in enumerate(tf_blocks):
             # Check basic bracket balance and HCL shape
@@ -65,15 +66,22 @@ class ValidatorAgent(BaseAgent):
                 with tempfile.TemporaryDirectory() as tmpdir:
                     tf_file = Path(tmpdir) / "main.tf"
                     tf_file.write_text(block, encoding="utf-8")
-                    res = subprocess.run(
-                        ["terraform", "fmt", "-check", str(tf_file)],
-                        capture_output=True,
-                        text=True,
+                    # Absolute, resolved binary path (never a partial name) and a
+                    # non-blocking exec so the agent event loop is not stalled.
+                    proc = await asyncio.create_subprocess_exec(
+                        str(terraform_bin),
+                        "fmt",
+                        "-check",
+                        str(tf_file),
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE,
                     )
+                    stdout_bytes, _ = await proc.communicate()
+                    stdout_text = stdout_bytes.decode("utf-8", errors="replace")
                     code_checks.append(
                         CodeValidationCheck(
                             tool="terraform_fmt",
-                            passed=(res.returncode == 0 or "main.tf" in res.stdout),
+                            passed=(proc.returncode == 0 or "main.tf" in stdout_text),
                             details=f"Terraform block #{idx + 1} checked against terraform CLI.",
                             command_run="terraform fmt -check",
                         )

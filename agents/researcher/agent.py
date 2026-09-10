@@ -2,7 +2,7 @@
 Researcher Bot: Gathers primary documentation, GitHub evidence, and structured claims.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from agents.base import BaseAgent
 from packages.llm import TaskTier
@@ -12,7 +12,7 @@ from packages.schemas import AgentType, ResearchPackage
 class ResearcherAgent(BaseAgent):
     agent_type = AgentType.RESEARCHER
 
-    async def process(self, article_id: str, input_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, article_id: str, input_payload: dict[str, Any]) -> dict[str, Any]:
         topic = input_payload.get("topic", "")
         category = input_payload.get("category", "")
 

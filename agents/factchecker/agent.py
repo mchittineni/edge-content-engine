@@ -2,7 +2,7 @@
 Fact-Checker Bot: Technical QA verifying citations, AWS/Terraform claims, and accuracy.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from agents.base import BaseAgent
 from packages.llm import TaskTier
@@ -12,7 +12,7 @@ from packages.schemas import AgentType, QAReport
 class FactCheckerAgent(BaseAgent):
     agent_type = AgentType.FACTCHECKER
 
-    async def process(self, article_id: str, input_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, article_id: str, input_payload: dict[str, Any]) -> dict[str, Any]:
         draft = input_payload.get("draft", {})
         research = input_payload.get("research", {})
 

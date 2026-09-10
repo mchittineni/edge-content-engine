@@ -2,7 +2,7 @@
 Analytics & Recommendation Agent: Aggregates performance into Weekly Intelligence.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from agents.base import BaseAgent
 from packages.schemas import AgentType
@@ -11,7 +11,7 @@ from packages.schemas import AgentType
 class AnalyticsAgent(BaseAgent):
     agent_type = AgentType.ANALYTICS
 
-    async def process(self, article_id: str, input_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, article_id: str, input_payload: dict[str, Any]) -> dict[str, Any]:
         # Weekly intelligence digest computation
         return {
             "weekly_summary": {
