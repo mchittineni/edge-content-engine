@@ -2,7 +2,7 @@
 Observability, tracing, and structured cost accounting.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from rich.console import Console
 
@@ -11,7 +11,7 @@ console = Console()
 
 class ArticleCostAuditor:
     @staticmethod
-    def print_breakdown(article_id: str, cost_records: list[Dict[str, Any]]):
+    def print_breakdown(article_id: str, cost_records: list[dict[str, Any]]) -> None:
         console.print(
             "\n[bold cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold cyan]"
         )

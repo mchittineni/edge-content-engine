@@ -1,4 +1,4 @@
-from .client import GitHubAppClient
-from .normalizer import GitHubEventNormalizer, NormalizedEvent
+from packages.github.client import GitHubAppClient
+from packages.github.normalizer import GitHubEventNormalizer, NormalizedEvent
 
-__all__ = ["GitHubEventNormalizer", "NormalizedEvent", "GitHubAppClient"]
+__all__ = ["GitHubAppClient", "GitHubEventNormalizer", "NormalizedEvent"]

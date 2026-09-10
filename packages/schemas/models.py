@@ -2,14 +2,14 @@
 Core Pydantic data models for the EDGE editorial pipeline.
 """
 
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class ArticleStatus(str, Enum):
+class ArticleStatus(StrEnum):
     DISCOVERED = "DISCOVERED"
     SCORED = "SCORED"
     RESEARCHING = "RESEARCHING"
@@ -28,7 +28,7 @@ class ArticleStatus(str, Enum):
     ANALYSING = "ANALYSING"
 
 
-class SourceTier(str, Enum):
+class SourceTier(StrEnum):
     TIER_1_OFFICIAL = "Tier 1: Official docs, GitHub repos, RFCs, specs, academic papers"
     TIER_2_ENGINEERING_BLOG = "Tier 2: Tech company engineering blogs, conference talks"
     TIER_3_COMMUNITY = "Tier 3: Reddit, Hacker News, community discussions"
@@ -67,19 +67,18 @@ class OpportunityScore(BaseModel):
         score = self.total_score
         if score >= 48:
             return "RESEARCH_IMMEDIATELY"
-        elif score >= 40:
+        if score >= 40:
             return "BACKLOG"
-        elif score >= 30:
+        if score >= 30:
             return "MONITOR"
-        else:
-            return "DISCARD"
+        return "DISCARD"
 
 
 class SourceReference(BaseModel):
     title: str
     url: str
     tier: SourceTier
-    notes: Optional[str] = None
+    notes: str | None = None
 
 
 class ClaimEvidence(BaseModel):
@@ -96,22 +95,22 @@ class ResearchPackage(BaseModel):
     article_id: str
     topic: str
     thesis: str
-    claims: List[ClaimEvidence] = Field(default_factory=list)
-    competitors_or_alternatives: List[str] = Field(default_factory=list)
-    github_evidence: List[Dict[str, Any]] = Field(default_factory=list)
-    counterarguments: List[str] = Field(default_factory=list)
-    sources: List[SourceReference] = Field(default_factory=list)
+    claims: list[ClaimEvidence] = Field(default_factory=list)
+    competitors_or_alternatives: list[str] = Field(default_factory=list)
+    github_evidence: list[dict[str, Any]] = Field(default_factory=list)
+    counterarguments: list[str] = Field(default_factory=list)
+    sources: list[SourceReference] = Field(default_factory=list)
 
 
 class ArchitecturePackage(BaseModel):
     article_id: str
     diagram_title: str
     mermaid_code: str
-    ascii_art: Optional[str] = None
-    svg_path: Optional[str] = None
-    png_path: Optional[str] = None
-    components: List[Dict[str, str]] = Field(default_factory=list)
-    tf_plan_insights: Optional[Dict[str, Any]] = None
+    ascii_art: str | None = None
+    svg_path: str | None = None
+    png_path: str | None = None
+    components: list[dict[str, str]] = Field(default_factory=list)
+    tf_plan_insights: dict[str, Any] | None = None
 
 
 class ArticleDraft(BaseModel):
@@ -129,17 +128,17 @@ class ArticleDraft(BaseModel):
     cost_analysis: str
     tradeoffs: str
     what_i_would_build: str
-    github_project_links: List[str] = Field(default_factory=list)
+    github_project_links: list[str] = Field(default_factory=list)
     conclusion: str
     full_markdown: str
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class CodeValidationCheck(BaseModel):
     tool: str  # terraform, ruff, tsc, checkov, tflint
     passed: bool
     details: str
-    command_run: Optional[str] = None
+    command_run: str | None = None
 
 
 class QAReport(BaseModel):
@@ -147,10 +146,10 @@ class QAReport(BaseModel):
     technical_score: int = Field(ge=0, le=100)
     citation_score: int = Field(ge=0, le=100)
     code_validity_score: int = Field(ge=0, le=100)
-    blocking_issues: List[str] = Field(default_factory=list)
-    warnings: List[str] = Field(default_factory=list)
+    blocking_issues: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
     verified_claims_count: int = 0
-    code_checks: List[CodeValidationCheck] = Field(default_factory=list)
+    code_checks: list[CodeValidationCheck] = Field(default_factory=list)
 
     @property
     def passed(self) -> bool:
@@ -169,9 +168,9 @@ class SEOBundle(BaseModel):
     meta_description: str
     slug: str
     primary_keyword: str
-    secondary_keywords: List[str] = Field(default_factory=list)
-    faq: List[Dict[str, str]] = Field(default_factory=list)
-    related_topics: List[str] = Field(default_factory=list)
+    secondary_keywords: list[str] = Field(default_factory=list)
+    faq: list[dict[str, str]] = Field(default_factory=list)
+    related_topics: list[str] = Field(default_factory=list)
     og_title: str
     og_description: str
 
@@ -179,20 +178,20 @@ class SEOBundle(BaseModel):
 class SocialPackage(BaseModel):
     article_id: str
     linkedin_post: str
-    reddit_post: Dict[str, str] = Field(
+    reddit_post: dict[str, str] = Field(
         description="Keys: title, body, discussion_prompt, target_subreddits"
     )
-    x_thread: List[str] = Field(default_factory=list)
-    hacker_news_submission: Optional[Dict[str, str]] = None
+    x_thread: list[str] = Field(default_factory=list)
+    hacker_news_submission: dict[str, str] | None = None
 
 
 class PublicationRecord(BaseModel):
     article_id: str
     platform: str = "beehiiv"
     post_id: str
-    web_url: Optional[str] = None
+    web_url: str | None = None
     status: str = "draft"  # draft | scheduled | published
-    published_at: Optional[datetime] = None
+    published_at: datetime | None = None
 
 
 class ArticleRecord(BaseModel):
@@ -200,15 +199,15 @@ class ArticleRecord(BaseModel):
     topic: str
     category: str = "architecture"
     status: ArticleStatus = ArticleStatus.DISCOVERED
-    score: Optional[OpportunityScore] = None
-    research: Optional[ResearchPackage] = None
-    architecture: Optional[ArchitecturePackage] = None
-    draft: Optional[ArticleDraft] = None
-    qa: Optional[QAReport] = None
-    seo: Optional[SEOBundle] = None
-    social: Optional[SocialPackage] = None
-    publication: Optional[PublicationRecord] = None
+    score: OpportunityScore | None = None
+    research: ResearchPackage | None = None
+    architecture: ArchitecturePackage | None = None
+    draft: ArticleDraft | None = None
+    qa: QAReport | None = None
+    seo: SEOBundle | None = None
+    social: SocialPackage | None = None
+    publication: PublicationRecord | None = None
     revisions_count: int = 0
     total_cost_usd: float = 0.0
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

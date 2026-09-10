@@ -5,7 +5,6 @@ Handles post creation, asynchronous status polling, and HTML payload conversion.
 
 import asyncio
 import os
-from typing import Dict, Optional
 
 import httpx
 
@@ -18,12 +17,12 @@ class BeehiivClient:
     The canonical source of truth remains in PostgreSQL & S3 Lake.
     """
 
-    def __init__(self, api_token: Optional[str] = None, publication_id: Optional[str] = None):
+    def __init__(self, api_token: str | None = None, publication_id: str | None = None):
         self.api_token = api_token or os.getenv("BEEHIIV_API_TOKEN")
         self.publication_id = publication_id or os.getenv("BEEHIIV_PUBLICATION_ID")
         self.base_url = "https://api.beehiiv.com/v2"
 
-    def _headers(self) -> Dict[str, str]:
+    def _headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Bearer {self.api_token}",
             "Content-Type": "application/json",
@@ -33,7 +32,7 @@ class BeehiivClient:
     async def create_draft_post(
         self,
         draft: ArticleDraft,
-        subtitle: Optional[str] = None,
+        subtitle: str | None = None,
         author: str = "Manideep Chittineni",
     ) -> PublicationRecord:
         """
@@ -73,8 +72,7 @@ class BeehiivClient:
             post_id = data.get("id")
 
             # Asynchronous Polling: Beehiiv may return 202 while processing
-            record = await self.poll_post_ready(post_id, draft.article_id)
-            return record
+            return await self.poll_post_ready(post_id, draft.article_id)
 
     async def poll_post_ready(
         self, post_id: str, article_id: str, max_retries: int = 10, delay_sec: float = 2.0

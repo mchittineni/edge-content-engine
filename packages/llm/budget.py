@@ -2,7 +2,7 @@
 Cost tracker and budget enforcer per article.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from packages.llm.routing import MODEL_PRICING_PER_1M_TOKENS
 
@@ -15,7 +15,7 @@ class ArticleBudgetTracker:
     def __init__(self, max_cost_usd: float = 2.50):
         self.max_cost_usd = max_cost_usd
         self.current_cost_usd = 0.0
-        self.history: list[Dict[str, Any]] = []
+        self.history: list[dict[str, Any]] = []
 
     def record_usage(
         self,
