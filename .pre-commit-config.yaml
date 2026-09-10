@@ -1,7 +1,9 @@
 # Local gates mirror CI. If a hook here passes but CI fails (or vice versa),
 # treat that drift as a bug in this file.
+# `python3` rather than a hard minor pin: the project supports 3.13 and 3.14,
+# and pinning one of them makes the hooks unrunnable for anyone on the other.
 default_language_version:
-  python: python3.11
+  python: python3
 
 default_install_hook_types: [pre-commit, commit-msg, pre-push]
 
