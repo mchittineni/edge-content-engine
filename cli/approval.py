@@ -14,13 +14,19 @@ from packages.storage import default_lake
 
 console = Console()
 
+_MENU = """[bold white]EDITORIAL DECISION:[/bold white]
+  [bold green][1][/bold green] APPROVE (Send to publishing queue)
+  [bold yellow][2][/bold yellow] REQUEST CHANGES (Send feedback to Writer)
+  [bold red][3][/bold red] REJECT (Archive idea)
+  [bold dim][4][/bold dim] VIEW FULL DRAFT
+  [bold dim][5][/bold dim] EXIT WITHOUT CHANGES"""
+
 
 class HumanApprovalGate:
-    @staticmethod
-    def render_and_prompt(article: ArticleRecord) -> ArticleStatus:
-        console.clear()
+    """Renders the review dashboard and applies the editor's decision."""
 
-        # Header Panel
+    @staticmethod
+    def _render_header(article: ArticleRecord) -> None:
         header = f"[bold cyan]EDGE PUBLICATION REVIEW GATE[/bold cyan] | [dim]{article.id}[/dim]"
         title_text = (
             f"[bold white]{article.draft.title if article.draft else article.topic}[/bold white]"
@@ -30,7 +36,8 @@ class HumanApprovalGate:
             Panel(f"{title_text}\nStatus: {status_badge}", title=header, border_style="cyan")
         )
 
-        # Scorecard Table
+    @staticmethod
+    def _render_scorecard(article: ArticleRecord) -> None:
         table = Table(title="Editorial & Technical Quality Scorecard", border_style="dim")
         table.add_column("Evaluation Metric", style="cyan")
         table.add_column("Score", justify="center", style="bold green")
@@ -59,46 +66,64 @@ class HumanApprovalGate:
 
         console.print(table)
 
-        # Claim & Evidence Matrix Preview
-        if article.research and article.research.claims:
-            console.print("\n[bold cyan]Verified Primary Evidence Matrix:[/bold cyan]")
-            for idx, claim in enumerate(article.research.claims[:3], 1):
-                console.print(f"  [yellow]{idx}.[/yellow] [bold]{claim.claim}[/bold]")
-                console.print(
-                    f"     [dim]Source: {claim.source_name} ({claim.tier.value[:6]}) — {claim.source_url}[/dim]"
-                )
+    @staticmethod
+    def _render_evidence(article: ArticleRecord) -> None:
+        if not (article.research and article.research.claims):
+            return
+        console.print("\n[bold cyan]Verified Primary Evidence Matrix:[/bold cyan]")
+        for idx, claim in enumerate(article.research.claims[:3], 1):
+            console.print(f"  [yellow]{idx}.[/yellow] [bold]{claim.claim}[/bold]")
+            console.print(
+                f"     [dim]Source: {claim.source_name} ({claim.tier.value[:6]}) — {claim.source_url}[/dim]"
+            )
 
-        # Architecture Preview
+    @staticmethod
+    def _render_architecture(article: ArticleRecord) -> None:
         if article.architecture and article.architecture.ascii_art:
             console.print("\n[bold cyan]Topology Overview:[/bold cyan]")
             console.print(Panel(article.architecture.ascii_art, style="green"))
 
-        # Social Distribution Preview
-        if article.social:
-            console.print("\n[bold cyan]Social Distribution Package Ready:[/bold cyan]")
-            console.print(
-                f"  • [blue]LinkedIn[/blue]: Leadership insight ready ({len(article.social.linkedin_post)} chars)"
-            )
-            console.print(
-                f"  • [red]Reddit[/red]: Authentic discussion ready (Target: {article.social.reddit_post.get('target_subreddits')})"
-            )
-            console.print(
-                f"  • [white]X Thread[/white]: {len(article.social.x_thread)} tweets synthesized"
-            )
-
-        # Action Prompt
+    @staticmethod
+    def _render_social(article: ArticleRecord) -> None:
+        if not article.social:
+            return
+        console.print("\n[bold cyan]Social Distribution Package Ready:[/bold cyan]")
         console.print(
-            "\n[bold magenta]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold magenta]"
+            f"  • [blue]LinkedIn[/blue]: Leadership insight ready ({len(article.social.linkedin_post)} chars)"
         )
-        console.print("[bold white]EDITORIAL DECISION:[/bold white]")
-        console.print("  [bold green][1][/bold green] APPROVE (Send to publishing queue)")
-        console.print("  [bold yellow][2][/bold yellow] REQUEST CHANGES (Send feedback to Writer)")
-        console.print("  [bold red][3][/bold red] REJECT (Archive idea)")
-        console.print("  [bold dim][4][/bold dim] VIEW FULL DRAFT")
-        console.print("  [bold dim][5][/bold dim] EXIT WITHOUT CHANGES")
+        console.print(
+            f"  • [red]Reddit[/red]: Authentic discussion ready (Target: {article.social.reddit_post.get('target_subreddits')})"
+        )
+        console.print(
+            f"  • [white]X Thread[/white]: {len(article.social.x_thread)} tweets synthesized"
+        )
 
-        choice = Prompt.ask("\nSelect action", choices=["1", "2", "3", "4", "5"], default="1")
+    @staticmethod
+    def _render_dashboard(article: ArticleRecord) -> None:
+        console.clear()
+        HumanApprovalGate._render_header(article)
+        HumanApprovalGate._render_scorecard(article)
+        HumanApprovalGate._render_evidence(article)
+        HumanApprovalGate._render_architecture(article)
+        HumanApprovalGate._render_social(article)
 
+    @staticmethod
+    def _show_draft(article: ArticleRecord) -> None:
+        if not article.draft:
+            console.print("[dim]No draft is available for this article yet.[/dim]")
+            Prompt.ask("Press Enter to return to decision menu")
+            return
+        console.print(
+            Panel(
+                article.draft.full_markdown[:2500] + "\n\n[dim]... (truncated)[/dim]",
+                title="Draft Preview",
+            )
+        )
+        Prompt.ask("Press Enter to return to decision menu")
+
+    @staticmethod
+    def _apply_decision(article: ArticleRecord, choice: str) -> None:
+        """Mutate and persist the article for a terminal (non-`4`) choice."""
         if choice == "1":
             article.status = ArticleStatus.APPROVED
             default_lake.save_article_state(article)
@@ -115,17 +140,28 @@ class HumanApprovalGate:
             article.status = ArticleStatus.REJECTED
             default_lake.save_article_state(article)
             console.print("\n[bold red]Article REJECTED.[/bold red]")
-        elif choice == "4":
-            if article.draft:
-                console.print(
-                    Panel(
-                        article.draft.full_markdown[:2500] + "\n\n[dim]... (truncated)[/dim]",
-                        title="Draft Preview",
-                    )
-                )
-                Prompt.ask("Press Enter to return to decision menu")
-                return HumanApprovalGate.render_and_prompt(article)
         else:
             console.print("[dim]Exited without state change.[/dim]")
 
-        return article.status
+    @staticmethod
+    def render_and_prompt(article: ArticleRecord) -> ArticleStatus:
+        """Loop the review dashboard until the editor makes a terminal decision."""
+        while True:
+            HumanApprovalGate._render_dashboard(article)
+
+            console.print(
+                "\n[bold magenta]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/bold magenta]"
+            )
+            console.print(_MENU)
+
+            choice = Prompt.ask("\nSelect action", choices=["1", "2", "3", "4", "5"], default="1")
+
+            # `4` previews the draft and returns to the menu; every other
+            # choice is terminal. A loop (not recursion) keeps repeated
+            # previews from growing the call stack without bound.
+            if choice == "4":
+                HumanApprovalGate._show_draft(article)
+                continue
+
+            HumanApprovalGate._apply_decision(article, choice)
+            return article.status

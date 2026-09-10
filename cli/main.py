@@ -21,14 +21,13 @@ console = Console()
 
 
 @click.group()
-def cli():
+def cli() -> None:
     """EDGE Content Engine: Autonomous Multi-Agent Engineering-Media Pipeline."""
-    pass
 
 
 @cli.command("discover")
 @click.option("--repo", default="mchittineni/tf-arch-diagram-generator", help="GitHub repo to scan")
-def discover(repo: str):
+def discover(repo: str) -> None:
     """Scan GitHub and ecosystems to discover candidate articles."""
     console.print(f"[bold cyan]Scanning sources & GitHub repository:[/bold cyan] {repo}...")
     dispatcher = AgentDispatcher()
@@ -62,7 +61,7 @@ def discover(repo: str):
     "--topic", default="Terraform plans are terrible architecture diagrams", help="Article topic"
 )
 @click.option("--category", default="architecture", help="Article category")
-def run_pipeline_cmd(action: str, article_id: str, topic: str, category: str):
+def run_pipeline_cmd(action: str, article_id: str, topic: str, category: str) -> None:
     """Execute the full editorial pipeline up to the approval gate."""
     orchestrator = ArticlePipelineOrchestrator()
     asyncio.run(orchestrator.run_pipeline(article_id=article_id, topic=topic, category=category))
@@ -70,7 +69,7 @@ def run_pipeline_cmd(action: str, article_id: str, topic: str, category: str):
 
 @cli.command("review")
 @click.argument("article_id", default="EDGE-2026-001")
-def review(article_id: str):
+def review(article_id: str) -> None:
     """Open the interactive terminal review & approval gate."""
     article = default_lake.load_article_state(article_id)
     if not article:
@@ -83,7 +82,7 @@ def review(article_id: str):
 
 @cli.command("publish")
 @click.argument("article_id", default="EDGE-2026-001")
-def publish(article_id: str):
+def publish(article_id: str) -> None:
     """Publish an approved article to Beehiiv and display social distribution packages."""
     article = default_lake.load_article_state(article_id)
     if not article:
@@ -129,7 +128,7 @@ def publish(article_id: str):
 @cli.command("diff-inspect")
 @click.argument("files_changed", type=int, default=12)
 @click.option("--benchmark", is_flag=True, default=True, help="Simulate benchmark modification")
-def diff_inspect(files_changed: int, benchmark: bool):
+def diff_inspect(files_changed: int, benchmark: bool) -> None:
     """Inspect a simulated or real git diff to see if it triggers an editorial idea."""
     normalizer = GitHubEventNormalizer()
     payload = {
@@ -153,7 +152,7 @@ def diff_inspect(files_changed: int, benchmark: bool):
 
 
 @cli.command("list")
-def list_articles():
+def list_articles() -> None:
     """List all tracked articles and their lifecycle status."""
     articles = default_lake.list_articles()
     table = Table(title="EDGE Content Pipeline State", border_style="cyan")
