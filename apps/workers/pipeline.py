@@ -26,7 +26,7 @@ console = Console()
 
 
 class ArticlePipelineOrchestrator:
-    def __init__(self):
+    def __init__(self) -> None:
         self.dispatcher = AgentDispatcher()
 
     async def run_pipeline(

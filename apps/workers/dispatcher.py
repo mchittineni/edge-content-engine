@@ -2,8 +2,6 @@
 Agent Dispatcher: Routes JobContract messages to the corresponding agent instance.
 """
 
-from typing import Dict
-
 from agents import (
     AnalyticsAgent,
     ArchitectAgent,
@@ -23,8 +21,8 @@ from packages.schemas import AgentType, JobContract
 
 
 class AgentDispatcher:
-    def __init__(self):
-        self.agents: Dict[AgentType, BaseAgent] = {
+    def __init__(self) -> None:
+        self.agents: dict[AgentType, BaseAgent] = {
             AgentType.DISCOVERY: DiscoveryAgent(),
             AgentType.SCORER: ScorerAgent(),
             AgentType.RESEARCHER: ResearcherAgent(),
