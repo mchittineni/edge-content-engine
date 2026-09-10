@@ -23,7 +23,7 @@ from packages.storage.lake import ContentLake
 
 
 @pytest.fixture(autouse=True)
-def isolated_test_env(monkeypatch: pytest.MonkeyPatch) -> Generator[str, None, None]:
+def isolated_test_env(monkeypatch: pytest.MonkeyPatch) -> Generator[str]:
     """
     Ensures tests execute with safe test environment variables and an isolated
     temporary storage directory so that test runs never pollute content/ or call live APIs.
