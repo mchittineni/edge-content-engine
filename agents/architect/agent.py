@@ -3,7 +3,7 @@ Architect Bot: Extracts cloud topologies, generates Mermaid/ASCII diagrams,
 and interfaces with tf-arch-diagram-generator.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from agents.base import BaseAgent
 from packages.llm import TaskTier
@@ -13,7 +13,7 @@ from packages.schemas import AgentType, ArchitecturePackage
 class ArchitectAgent(BaseAgent):
     agent_type = AgentType.ARCHITECT
 
-    async def process(self, article_id: str, input_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, article_id: str, input_payload: dict[str, Any]) -> dict[str, Any]:
         topic = input_payload.get("topic", "")
         research_claims = input_payload.get("claims", [])
 

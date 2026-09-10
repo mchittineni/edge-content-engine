@@ -2,7 +2,7 @@
 Writer Bot: Senior Technical Editor for EDGE enforcing the 14-section format.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 from agents.base import BaseAgent
 from packages.llm import TaskTier
@@ -12,7 +12,7 @@ from packages.schemas import AgentType, ArticleDraft
 class WriterAgent(BaseAgent):
     agent_type = AgentType.WRITER
 
-    async def process(self, article_id: str, input_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def process(self, article_id: str, input_payload: dict[str, Any]) -> dict[str, Any]:
         topic = input_payload.get("topic", "")
         research = input_payload.get("research", {})
         architecture = input_payload.get("architecture", {})
