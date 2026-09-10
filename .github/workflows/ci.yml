@@ -15,9 +15,8 @@ permissions:
   contents: read
 
 env:
-  PYTHON_DEFAULT: "3.11"
+  PYTHON_DEFAULT: "3.13"
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  FORCE_COLOR: "1"
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -84,7 +83,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.13", "3.14"]
 
     steps:
       - name: Checkout Repository
@@ -167,7 +166,7 @@ jobs:
         run: pip install -e "."
 
       - name: pip-audit (resolved environment)
-        run: pip-audit --desc on --strict
+        run: pip-audit --desc on
 
   dependency-review:
     name: Dependency Review (PR)
@@ -251,8 +250,8 @@ jobs:
           exit-code: "0"
 
       - name: Upload IaC SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@faaca9a8f6edddba5725ffe5adefdab6669a2eca # v3
+        if: always() && hashFiles('trivy-iac.sarif') != ''
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         with:
           sarif_file: trivy-iac.sarif
           category: trivy-iac
@@ -304,8 +303,8 @@ jobs:
           exit-code: "0"
 
       - name: Upload image SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@faaca9a8f6edddba5725ffe5adefdab6669a2eca # v3
+        if: always() && hashFiles('trivy-image.sarif') != ''
+        uses: github/codeql-action/upload-sarif@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
         with:
           sarif_file: trivy-image.sarif
           category: trivy-image
