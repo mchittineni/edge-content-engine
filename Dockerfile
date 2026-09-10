@@ -1,7 +1,7 @@
 # ==============================================================================
 # Stage 1: Build virtual environment and wheels
 # ==============================================================================
-FROM python:3.13-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /build
 
@@ -26,7 +26,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # ==============================================================================
 # Stage 2: Minimal hardened runtime
 # ==============================================================================
-FROM python:3.13-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 # Security hardening: Run as non-root user
 RUN groupadd -g 10001 appgroup && \
