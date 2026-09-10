@@ -1,3 +1,17 @@
+terraform {
+  required_version = ">= 1.9.0"
+
+  # Must match the constraint in every consuming environment, otherwise a
+  # standalone `terraform validate` of this module resolves a different
+  # provider major version and reports errors the environments never see.
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 # S3 Content Lake: Immutable storage for raw sources, research, drafts, and diagrams
 
 resource "aws_s3_bucket" "content_lake" {

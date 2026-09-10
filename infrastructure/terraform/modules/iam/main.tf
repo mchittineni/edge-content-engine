@@ -1,3 +1,17 @@
+terraform {
+  required_version = ">= 1.9.0"
+
+  # Must match the constraint in every consuming environment, otherwise a
+  # standalone `terraform validate` of this module resolves a different
+  # provider major version and reports errors the environments never see.
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 # Least-Privilege IAM Roles & GitHub Actions OIDC Federation
 
 data "aws_caller_identity" "current" {}

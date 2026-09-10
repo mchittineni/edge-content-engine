@@ -1,3 +1,17 @@
+terraform {
+  required_version = ">= 1.9.0"
+
+  # Must match the constraint in every consuming environment, otherwise a
+  # standalone `terraform validate` of this module resolves a different
+  # provider major version and reports errors the environments never see.
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
 # ECS Fargate Cluster, ECR Repository, and Task Definitions
 
 # 1. Private Elastic Container Registry (ECR)
