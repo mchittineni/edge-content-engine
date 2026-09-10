@@ -1,43 +1,112 @@
+# Local gates mirror CI. If a hook here passes but CI fails (or vice versa),
+# treat that drift as a bug in this file.
 default_language_version:
   python: python3.11
 
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+
+# content/ holds generated pipeline artifacts (drafts, diagrams, research,
+# state). Hygiene hooks would rewrite them on every commit and they would be
+# regenerated unformatted on the next pipeline run - an unwinnable loop.
+exclude: '^content/'
+
+ci:
+  autoupdate_schedule: monthly
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        exclude: ^(\.github/workflows/.*)$
+        args: [--allow-multiple-documents]
       - id: check-json
       - id: check-toml
       - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: check-executables-have-shebangs
       - id: check-added-large-files
-        args: ['--maxkb=1024']
+        args: ["--maxkb=1024"]
       - id: detect-private-key
+      - id: debug-statements
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: no-commit-to-branch
+        args: [--branch, main]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.4
+    rev: v0.16.6
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+    rev: v2.3.1
     hooks:
       - id: mypy
+        # mypy resolves imports against these, so every runtime dependency
+        # that appears in a type position must be listed here or the hook
+        # silently reports import-not-found instead of real type errors.
         additional_dependencies:
           - pydantic>=2.7.0
           - pydantic-settings>=2.2.0
+          - fastapi>=0.111.0
+          - httpx>=0.27.0
+          - sqlmodel>=0.0.19
+          - click>=8.1.7
+          - rich>=13.7.1
           - types-pyyaml
         args: [--config-file=pyproject.toml]
         pass_filenames: false
         entry: mypy packages agents apps cli
 
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.8
+    rev: 1.9.4
     hooks:
       - id: bandit
         args: [-c, pyproject.toml, -r, packages, agents, apps, cli]
         pass_filenames: false
+
+  # Secret scanning locally, so a credential never reaches the remote at all.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  # Workflow files are code; lint them like code.
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.7
+    hooks:
+      - id: actionlint
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.14.0
+    hooks:
+      - id: hadolint-docker
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.109.1
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_validate
+        args: [--hook-config=--retry-once-with-cleanup=true]
+
+  # Conventional Commits, matching the PR-title gate in CI.
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.2.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+
+  # The full test suite is too slow for every commit; run it before push.
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest (with coverage gate)
+        entry: pytest tests/
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
