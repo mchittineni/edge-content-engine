@@ -14,9 +14,10 @@ console = Console()
 
 
 class WorkerRunner:
-    def __init__(self):
+    def __init__(self) -> None:
         self.dispatcher = AgentDispatcher()
         self.running = True
+        self._stop_event = asyncio.Event()
 
     async def process_single_job(self, job: JobContract) -> JobContract:
         console.print(
@@ -40,16 +41,22 @@ class WorkerRunner:
 
         return result_job
 
-    async def run_daemon(self, poll_interval_sec: float = 3.0):
+    async def run_daemon(self, poll_interval_sec: float = 3.0) -> None:
         console.print(
             "[bold green]EDGE Content Engine Worker Runner started.[/bold green] Listening for queue jobs..."
         )
         while self.running:
-            # Polling placeholder for SQS or local queue file
-            await asyncio.sleep(poll_interval_sec)
+            # Poll placeholder for SQS or the local queue file. Waiting on the
+            # stop event (rather than sleeping blindly) makes shutdown immediate
+            # instead of taking up to one full poll interval.
+            try:
+                await asyncio.wait_for(self._stop_event.wait(), timeout=poll_interval_sec)
+            except TimeoutError:
+                continue
 
-    def stop(self):
+    def stop(self) -> None:
         self.running = False
+        self._stop_event.set()
 
 
 if __name__ == "__main__":

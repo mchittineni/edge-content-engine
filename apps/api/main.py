@@ -3,7 +3,7 @@ FastAPI Server for EDGE Content Engine.
 Handles GitHub webhooks, article lifecycle queries, and review actions.
 """
 
-from typing import List, Optional
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi import Path as FPath
@@ -30,17 +30,17 @@ app.add_middleware(
 
 
 @app.get("/healthz")
-async def healthz():
+async def healthz() -> dict[str, str]:
     return {"status": "ok", "service": "edge-content-engine"}
 
 
-@app.get("/api/v1/articles", response_model=List[ArticleRecord])
-async def list_articles():
+@app.get("/api/v1/articles", response_model=list[ArticleRecord])
+async def list_articles() -> list[ArticleRecord]:
     return default_lake.list_articles()
 
 
 @app.get("/api/v1/articles/{article_id}", response_model=ArticleRecord)
-async def get_article(article_id: str = FPath(pattern=r"^[a-zA-Z0-9_\-]+$")):
+async def get_article(article_id: str = FPath(pattern=r"^[a-zA-Z0-9_\-]+$")) -> ArticleRecord:
     article = default_lake.load_article_state(article_id)
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
@@ -49,13 +49,13 @@ async def get_article(article_id: str = FPath(pattern=r"^[a-zA-Z0-9_\-]+$")):
 
 class ApprovalActionRequest(BaseModel):
     action: str  # approve | request_changes | reject
-    feedback: Optional[str] = None
+    feedback: str | None = None
 
 
 @app.post("/api/v1/articles/{article_id}/review")
 async def review_article(
     body: ApprovalActionRequest, article_id: str = FPath(pattern=r"^[a-zA-Z0-9_\-]+$")
-):
+) -> dict[str, str]:
     article = default_lake.load_article_state(article_id)
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
@@ -75,7 +75,7 @@ async def review_article(
 
 
 @app.post("/api/v1/webhooks/github")
-async def github_webhook(payload: dict):
+async def github_webhook(payload: dict[str, Any]) -> dict[str, Any]:
     normalizer = GitHubEventNormalizer()
     event = normalizer.normalize(payload.get("action", "push"), payload)
     return {
