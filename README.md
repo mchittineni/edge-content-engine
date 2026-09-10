@@ -139,4 +139,3 @@ make docker-up        # Start containerized local stack (API + Worker)
 ```
 
 For full guidelines on branching, PR submission, and definition of done, see [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
-
