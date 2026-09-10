@@ -1,0 +1,173 @@
+name: Terraform Destroy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment to DESTROY
+        required: true
+        type: choice
+        options: [staging, prod]
+      confirmation:
+        description: 'Type "destroy-<environment>" exactly (e.g. destroy-staging)'
+        required: true
+        type: string
+      reason:
+        description: Why this teardown is happening (recorded in the run log)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  TF_VERSION: "1.9.8"
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "0"
+
+jobs:
+  guard:
+    name: Confirm intent
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Verify confirmation string
+        run: |
+          expected="destroy-${{ inputs.environment }}"
+          actual="${{ inputs.confirmation }}"
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::Confirmation mismatch. Expected '$expected', got '$actual'."
+            exit 1
+          fi
+          echo "Confirmed teardown of '${{ inputs.environment }}'."
+
+      - name: Record intent
+        run: |
+          {
+            echo "## Destroy requested — \`${{ inputs.environment }}\`"
+            echo "- **Actor:** @${{ github.actor }}"
+            echo "- **Reason:** ${{ inputs.reason }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  plan-destroy:
+    name: Plan destroy (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: guard
+    permissions:
+      contents: read
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: edge-tf-destroy-plan-${{ inputs.environment }}
+
+      - name: Terraform init
+        working-directory: infrastructure/terraform/environments/${{ inputs.environment }}
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=edge-content-engine/${{ inputs.environment }}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ vars.TF_LOCK_TABLE }}" \
+            -backend-config="encrypt=true"
+
+      - name: Terraform plan -destroy
+        working-directory: infrastructure/terraform/environments/${{ inputs.environment }}
+        run: terraform plan -destroy -lock-timeout=5m -out=tfdestroy
+
+      - name: Publish destroy plan to job summary
+        working-directory: infrastructure/terraform/environments/${{ inputs.environment }}
+        run: |
+          {
+            echo "## Destroy plan — \`${{ inputs.environment }}\`"
+            echo "Review this list before approving. **These resources will be deleted.**"
+            echo '```terraform'
+            terraform show -no-color tfdestroy | head -c 60000
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload destroy plan
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tfdestroy-${{ inputs.environment }}
+          path: infrastructure/terraform/environments/${{ inputs.environment }}/tfdestroy
+          retention-days: 5
+          include-hidden-files: true
+
+  destroy:
+    name: Destroy (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: plan-destroy
+    # Approval gate. Configure required reviewers on this Environment - for
+    # `prod` this should be the only way the job can start.
+    environment:
+      name: ${{ inputs.environment }}-destroy
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: edge-tf-destroy-${{ inputs.environment }}
+
+      - name: Terraform init
+        working-directory: infrastructure/terraform/environments/${{ inputs.environment }}
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=edge-content-engine/${{ inputs.environment }}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ vars.TF_LOCK_TABLE }}" \
+            -backend-config="encrypt=true"
+
+      - name: Download approved destroy plan
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: tfdestroy-${{ inputs.environment }}
+          path: infrastructure/terraform/environments/${{ inputs.environment }}
+
+      - name: Terraform apply (destroy plan)
+        working-directory: infrastructure/terraform/environments/${{ inputs.environment }}
+        run: terraform apply -lock-timeout=5m -auto-approve tfdestroy
+
+      - name: Record teardown
+        if: always()
+        run: |
+          {
+            echo "## Destroyed — \`${{ inputs.environment }}\`"
+            echo "- **Actor:** @${{ github.actor }}"
+            echo "- **Reason:** ${{ inputs.reason }}"
+            echo "- **Result:** ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"

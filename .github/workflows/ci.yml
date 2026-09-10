@@ -2,145 +2,358 @@ name: CI & Enterprise Quality Gate
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege by default; jobs opt in to more where they must.
 permissions:
   contents: read
 
+env:
+  PYTHON_DEFAULT: "3.11"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  FORCE_COLOR: "1"
+
 jobs:
-  lint-and-format:
-    name: Lint & Format Check
+  # ---------------------------------------------------------------------------
+  # Static quality
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint & Format
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.11"
-          cache: "pip"
+          python-version: ${{ env.PYTHON_DEFAULT }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
-      - name: Install Lint Tools
-        run: pip install ruff
-
-      - name: Ruff Linter
-        run: ruff check .
-
-      - name: Ruff Formatter Check
-        run: ruff format --check .
-
-  type-check:
-    name: Strict Type Checking (Mypy)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-
-      - name: Install Project & Dev Dependencies
+      - name: Install project (dev extras)
         run: pip install -e ".[dev]"
 
-      - name: Run Mypy
-        run: mypy packages agents apps cli
+      - name: Ruff lint
+        run: ruff check --output-format=github .
 
-  security-audit:
-    name: SAST & Supply Chain Security
+      - name: Ruff format check
+        run: ruff format --check --diff .
+
+  type-check:
+    name: Strict Type Check (mypy)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.11"
-          cache: "pip"
+          python-version: ${{ env.PYTHON_DEFAULT }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
-      - name: Install Security Scanners
-        run: pip install bandit pip-audit
+      - name: Install project (dev extras)
+        run: pip install -e ".[dev]"
 
-      - name: Run Bandit (SAST)
-        run: bandit -c pyproject.toml -r packages agents apps cli -s B101,B404,B603,B607,B110
+      - name: mypy (strict)
+        run: mypy packages agents apps cli
 
-      - name: Run Pip-Audit (Vulnerabilities)
-        run: pip-audit -r requirements.txt --desc on
-
-  test-suite:
-    name: Test Matrix (Python ${{ matrix.python-version }})
+  # ---------------------------------------------------------------------------
+  # Tests - full-scope coverage, enforced
+  # ---------------------------------------------------------------------------
+  test:
+    name: Tests (py${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+        python-version: ["3.11", "3.12", "3.13"]
 
-      - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
-      - name: Install Project & Dev Dependencies
+      - name: Install project (dev extras)
         run: pip install -e ".[dev]"
 
-      - name: Run Pytest with Coverage
-        run: |
-          pytest --cov=packages --cov=agents \
-                 --cov-report=xml \
-                 --cov-report=term-missing \
-                 tests/
+      - name: Pytest with coverage gate
+        run: pytest tests/ --junitxml=junit-${{ matrix.python-version }}.xml
 
-      - name: Upload Coverage Artifacts
-        if: matrix.python-version == '3.11'
-        uses: actions/upload-artifact@v4
+      - name: Upload test & coverage reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: coverage-report
-          path: coverage.xml
+          name: test-reports-py${{ matrix.python-version }}
+          path: |
+            coverage.xml
+            junit-${{ matrix.python-version }}.xml
           retention-days: 14
 
-  terraform-checks:
+  # ---------------------------------------------------------------------------
+  # Security
+  # ---------------------------------------------------------------------------
+  sast:
+    name: SAST (Bandit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ env.PYTHON_DEFAULT }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install project (dev extras)
+        run: pip install -e ".[dev]"
+
+      - name: Bandit
+        run: bandit -c pyproject.toml -r packages agents apps cli
+
+  dependency-audit:
+    name: Dependency Vulnerability Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ env.PYTHON_DEFAULT }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install pip-audit
+        run: pip install pip-audit
+
+      - name: Install project
+        run: pip install -e "."
+
+      - name: pip-audit (resolved environment)
+        run: pip-audit --desc on --strict
+
+  dependency-review:
+    name: Dependency Review (PR)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure as Code
+  # ---------------------------------------------------------------------------
+  terraform:
     name: Terraform Quality Gate
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
-          terraform_version: "1.7.0"
+          terraform_version: "1.9.8"
 
-      - name: Terraform Format Check
+      - name: terraform fmt
         run: terraform fmt -check -recursive infrastructure/terraform/
 
-  docker-build:
-    name: Container Build Smoke Test
+      - name: terraform validate (all modules & environments)
+        run: |
+          set -euo pipefail
+          failed=0
+          while IFS= read -r dir; do
+            echo "::group::validate $dir"
+            if ! (cd "$dir" && terraform init -backend=false -input=false >/dev/null && terraform validate); then
+              echo "::error file=$dir::terraform validate failed"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done < <(find infrastructure/terraform -type f -name '*.tf' -exec dirname {} \; | sort -u)
+          exit $failed
+
+  iac-security:
+    name: IaC Security Scan (Trivy)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Trivy IaC misconfiguration scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: infrastructure/
+          format: sarif
+          output: trivy-iac.sarif
+          severity: CRITICAL,HIGH
+          exit-code: "0"
 
-      - name: Build Docker Image
-        uses: docker/build-push-action@v5
+      - name: Upload IaC SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@faaca9a8f6edddba5725ffe5adefdab6669a2eca # v3
+        with:
+          sarif_file: trivy-iac.sarif
+          category: trivy-iac
+
+  # ---------------------------------------------------------------------------
+  # Container
+  # ---------------------------------------------------------------------------
+  container:
+    name: Container Build, Scan & SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - name: Build image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           file: ./Dockerfile
           push: false
-          tags: edge-content-engine:test
+          load: true
+          tags: edge-content-engine:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test the image
+        run: |
+          docker run --rm edge-content-engine:ci python -c "import apps.api.main; print('import ok')"
+          docker run --rm edge-content-engine:ci edge --help >/dev/null
+
+      - name: Trivy image vulnerability scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: edge-content-engine:ci
+          format: sarif
+          output: trivy-image.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0"
+
+      - name: Upload image SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@faaca9a8f6edddba5725ffe5adefdab6669a2eca # v3
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image
+
+      - name: Generate SBOM (CycloneDX)
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        with:
+          image: edge-content-engine:ci
+          format: cyclonedx-json
+          artifact-name: sbom-cyclonedx.json
+          output-file: sbom-cyclonedx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom
+          path: sbom-cyclonedx.json
+          retention-days: 90
+
+  # ---------------------------------------------------------------------------
+  # Single required status check for branch protection
+  # ---------------------------------------------------------------------------
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs:
+      - lint
+      - type-check
+      - test
+      - sast
+      - dependency-audit
+      - terraform
+      - iac-security
+      - container
+
+    steps:
+      - name: Verify all gates passed
+        run: |
+          results='${{ toJSON(needs) }}'
+          echo "$results"
+          echo "$results" | python3 -c '
+          import json, sys
+          needs = json.load(sys.stdin)
+          bad = {k: v["result"] for k, v in needs.items() if v["result"] not in ("success", "skipped")}
+          if bad:
+              print("FAILED GATES:", bad)
+              sys.exit(1)
+          print("All quality gates passed.")
+          '
