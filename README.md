@@ -1,5 +1,12 @@
 # EDGE Content Engine (`edge-content-engine`)
 
+[![CI](https://github.com/mchittineni/edge-content-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/mchittineni/edge-content-engine/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+[![Buy me a coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-FFDD00?style=for-the-badge&logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/mchittineni)
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-24292F?style=for-the-badge&logo=githubsponsors&logoColor=EA4AAA)](https://github.com/sponsors/mchittineni)
+
 An autonomous, event-driven engineering-media platform built for the **EDGE** publication on Beehiiv. It turns real GitHub engineering activity, cloud infrastructure developments, and technical benchmarks into peer-reviewed, fact-checked, architecturally illustrated deep-dive articles—with you as the ultimate human approval gate.
 
 ---
